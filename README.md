@@ -76,5 +76,3 @@ To run them, add a **Unit Testing Bundle** target in Xcode and add this file to 
 
 - Compiled/run in Xcode — this scaffold was authored on Linux (no Xcode available), so a
   first build pass on a Mac is expected to shake out minor fixes.
-- Rhythm-Heaven-style illustrated diagrams on the Rules screen (structure + tone are in).
-- App icon art (placeholder only).

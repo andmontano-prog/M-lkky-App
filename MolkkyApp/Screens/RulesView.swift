@@ -1,18 +1,30 @@
 import SwiftUI
 
-/// Illustrated rules. v0.1 lays out the structure and tone; the diagrams get the
-/// full Rhythm-Heaven treatment (weird, charming JP-cartoon art) in a later pass.
+/// Illustrated rules in a flat, Rhythm-Heaven-flavored cartoon style — skittles
+/// with faces, motion lines, the works. Art lives in Assets.xcassets
+/// (rule-toss / rule-count / rule-fifty / rule-out).
 struct RulesView: View {
-    private let steps: [(String, String, String)] = [
-        ("1", "Toss the baton", "Underhand, from behind the line, at the numbered pins."),
-        ("2", "Count what falls", "One pin = its number. Two or more = how many fell. Knock 12 & 3? That's 2 points."),
-        ("3", "Hit exactly 50", "First to 50 wins. Go over and you drop back to 25 — so mind your aim near the top."),
-        ("4", "Three misses, you're out", "Whiff three times in a row and you're eliminated. New players can earn an extra strike.")
+    private struct Rule: Identifiable {
+        let id: Int
+        let image: String
+        let title: String
+        let body: AttributedString
+    }
+
+    private let rules: [Rule] = [
+        Rule(id: 1, image: "rule-toss", title: "Toss the baton",
+             body: "Underhand, from behind the line, at the numbered pins."),
+        Rule(id: 2, image: "rule-count", title: "Count what falls",
+             body: try! AttributedString(markdown: "**One pin** = its number. **Two or more** = how many fell.")),
+        Rule(id: 3, image: "rule-fifty", title: "Race to exactly 50",
+             body: try! AttributedString(markdown: "First to **50** wins. Go over and you drop back to **25**.")),
+        Rule(id: 4, image: "rule-out", title: "Three misses, you're out",
+             body: try! AttributedString(markdown: "Whiff **three times** in a row and you're eliminated. New players can earn a fourth."))
     ]
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 14) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("How to\nplay").font(.molkkyHeader(46)).foregroundStyle(Palette.forest)
                     Text("Knock 'em down. Hit fifty. Don't overcook it.")
@@ -21,31 +33,15 @@ struct RulesView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(22)
                 .background(Palette.lime, in: RoundedRectangle(cornerRadius: 20))
-                .padding(.bottom, 8)
 
-                ForEach(steps, id: \.0) { step in
-                    HStack(alignment: .top, spacing: 14) {
-                        Text(step.0)
-                            .font(.molkkyHeader(44)).foregroundStyle(Palette.lime)
-                            .frame(width: 44)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(step.1).font(.suseExtraBold(16)).foregroundStyle(Palette.cream)
-                            Text(step.2).font(.suseExtraLight(14)).foregroundStyle(Palette.sage)
-                                .lineSpacing(3)
-                        }
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.vertical, 16)
-                    .overlay(
-                        Rectangle().fill(Palette.sage.opacity(0.25)).frame(height: 1),
-                        alignment: .bottom
-                    )
+                ForEach(rules) { rule in
+                    RuleCard(rule: rule)
                 }
 
-                Text("Diagrams get the full Rhythm-Heaven treatment in a later build.")
+                Text("Skittles with feelings. More scenes as the game grows.")
                     .font(.suseExtraLight(12)).foregroundStyle(Palette.sage)
                     .frame(maxWidth: .infinity)
-                    .padding(.top, 12)
+                    .padding(.top, 6)
             }
             .padding(.horizontal, 22)
             .padding(.bottom, 30)
@@ -53,5 +49,32 @@ struct RulesView: View {
         .background(MolkkyBackground())
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private struct RuleCard: View {
+        let rule: Rule
+        var body: some View {
+            VStack(spacing: 0) {
+                Image(rule.image)
+                    .resizable()
+                    .aspectRatio(3.0 / 2.0, contentMode: .fit)
+                    .frame(maxWidth: .infinity)
+                HStack(alignment: .top, spacing: 12) {
+                    Text("\(rule.id)")
+                        .font(.molkkyHeader(34)).foregroundStyle(Palette.lime)
+                        .frame(width: 28, alignment: .leading)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(rule.title).font(.suseExtraBold(15)).foregroundStyle(Palette.cream)
+                        Text(rule.body).font(.suseExtraLight(13)).foregroundStyle(Palette.sage)
+                            .tint(Palette.lime)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(14)
+            }
+            .background(Palette.pine, in: RoundedRectangle(cornerRadius: 18))
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Palette.lime.opacity(0.12), lineWidth: 1))
+            .clipShape(RoundedRectangle(cornerRadius: 18))
+        }
     }
 }
