@@ -1,4 +1,4 @@
-# Mölkky
+# Mölkky Go
 
 A better iOS scorer for the Finnish lawn game **Mölkky** — fast to set up, delightful
 to score, and built in a heritage lawn-sport aesthetic. Fully **local and offline**:
