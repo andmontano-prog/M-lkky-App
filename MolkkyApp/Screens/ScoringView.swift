@@ -59,34 +59,19 @@ struct ScoringView: View {
     // MARK: Header
 
     private func header(_ controller: GameController) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Now throwing · Round \(game.round)").molkkyLabel()
-                    Text(controller.current?.name ?? "—")
-                        .font(.molkkyHeader(40)).foregroundStyle(Palette.lime)
-                }
-                Spacer()
-                Button { showRules = true } label: {
-                    Image(systemName: "gearshape.fill")
-                        .foregroundStyle(Palette.cream)
-                        .frame(width: 42, height: 42)
-                        .background(Palette.cream.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Palette.cream.opacity(0.14), lineWidth: 1))
-                }
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Now throwing · Round \(game.round)").molkkyLabel()
+                Text(controller.current?.name ?? "—")
+                    .font(.molkkyHeader(40)).foregroundStyle(Palette.lime)
             }
-            if game.ruleFirstTimerExtraStrikes > 0, let current = controller.current {
-                Button {
-                    controller.setFirstTimer(current, !current.isFirstTimer)
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: current.isFirstTimer ? "checkmark.square.fill" : "square")
-                            .foregroundStyle(current.isFirstTimer ? Palette.lime : Palette.sage)
-                        Text("First-time player — give \(firstName(current.name)) +\(game.ruleFirstTimerExtraStrikes) strike")
-                            .font(.suseSemiBold(12.5)).foregroundStyle(Palette.sage)
-                    }
-                }
-                .buttonStyle(.plain)
+            Spacer()
+            Button { showRules = true } label: {
+                Image(systemName: "gearshape.fill")
+                    .foregroundStyle(Palette.cream)
+                    .frame(width: 42, height: 42)
+                    .background(Palette.cream.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Palette.cream.opacity(0.14), lineWidth: 1))
             }
         }
         .padding(.horizontal, 20)
@@ -133,6 +118,12 @@ struct ScoringView: View {
         } else {
             ScorePad(
                 contextText: padContext(controller),
+                showFirstTimer: editing == nil && game.ruleFirstTimerExtraStrikes > 0,
+                isFirstTimer: controller.current?.isFirstTimer ?? false,
+                firstTimerExtra: game.ruleFirstTimerExtraStrikes,
+                onToggleFirstTimer: {
+                    if let cur = controller.current { controller.setFirstTimer(cur, !cur.isFirstTimer) }
+                },
                 onValue: { value in
                     if let e = editing {
                         if let p = context.model(for: e.participantID) as? GameParticipant {
@@ -324,6 +315,10 @@ struct ReadyPanel: View {
 
 struct ScorePad: View {
     let contextText: AttributedString
+    var showFirstTimer: Bool = false
+    var isFirstTimer: Bool = false
+    var firstTimerExtra: Int = 1
+    var onToggleFirstTimer: () -> Void = {}
     let onValue: (Int) -> Void
     let onCancel: () -> Void
 
@@ -338,6 +333,25 @@ struct ScorePad: View {
                     Text("Cancel").font(.suseSemiBold(12.5)).foregroundStyle(Palette.sage)
                         .padding(.horizontal, 13).padding(.vertical, 7)
                         .overlay(RoundedRectangle(cornerRadius: 9).stroke(Palette.cream.opacity(0.2), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+            if showFirstTimer {
+                Button(action: onToggleFirstTimer) {
+                    HStack(spacing: 9) {
+                        Image(systemName: isFirstTimer ? "checkmark.square.fill" : "square")
+                            .font(.system(size: 20))
+                            .foregroundStyle(isFirstTimer ? Palette.lime : Palette.sage)
+                        Text("First-timer handicap · +\(firstTimerExtra) strike\(firstTimerExtra > 1 ? "s" : "")")
+                            .font(.suseSemiBold(13))
+                            .foregroundStyle(isFirstTimer ? Palette.cream : Palette.sage)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 12).padding(.vertical, 10)
+                    .background((isFirstTimer ? Palette.lime.opacity(0.1) : Palette.cream.opacity(0.05)),
+                                in: RoundedRectangle(cornerRadius: 11))
+                    .overlay(RoundedRectangle(cornerRadius: 11)
+                        .stroke(isFirstTimer ? Palette.lime : Palette.cream.opacity(0.14), lineWidth: 1))
                 }
                 .buttonStyle(.plain)
             }
