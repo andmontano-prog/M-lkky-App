@@ -15,6 +15,9 @@ struct ScoringView: View {
     @State private var editing: EditTarget?
     @State private var expandedID: PersistentIdentifier?
     @State private var flashID: PersistentIdentifier?
+    @State private var showGameMenu = false
+    @State private var showAddPlayer = false
+    @State private var renaming: GameParticipant?
 
     struct EditTarget: Equatable {
         let participantID: PersistentIdentifier
@@ -45,6 +48,29 @@ struct ScoringView: View {
         .sheet(isPresented: $showRules) {
             RulesSheet(game: game).presentationDetents([.height(430)])
         }
+        .sheet(isPresented: $showGameMenu) {
+            GameMenuSheet(
+                round: game.round,
+                onAdd: { DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showAddPlayer = true } },
+                onRestart: { controller?.restart(); armed = false; editing = nil; expandedID = game.currentParticipant?.persistentModelID },
+                onHome: { path.removeAll() },
+                onEnd: { context.delete(game); try? context.save(); path.removeAll() }
+            )
+            .presentationDetents([.height(430)])
+        }
+        .sheet(isPresented: $showAddPlayer) {
+            AddPlayerSheet(existingNames: game.participants.map { $0.name }) { name in
+                controller?.addParticipant(named: name)
+                expandedID = game.orderedParticipants.last?.persistentModelID
+            }
+            .presentationDetents([.height(460)])
+        }
+        .sheet(item: $renaming) { participant in
+            RenameSheet(currentName: participant.name) { newName in
+                controller?.rename(participant, to: newName)
+            }
+            .presentationDetents([.height(280)])
+        }
     }
 
     private func content(_ controller: GameController) -> some View {
@@ -59,11 +85,19 @@ struct ScoringView: View {
     // MARK: Header
 
     private func header(_ controller: GameController) -> some View {
-        HStack(alignment: .top) {
+        HStack(alignment: .top, spacing: 12) {
+            Button { showGameMenu = true } label: {
+                Image(systemName: "line.3.horizontal")
+                    .foregroundStyle(Palette.cream)
+                    .frame(width: 42, height: 42)
+                    .background(Palette.cream.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Palette.cream.opacity(0.14), lineWidth: 1))
+            }
             VStack(alignment: .leading, spacing: 0) {
                 Text("Now throwing · Round \(game.round)").molkkyLabel()
                 Text(controller.current?.name ?? "—")
                     .font(.molkkyHeader(40)).foregroundStyle(Palette.lime)
+                    .lineLimit(1).minimumScaleFactor(0.6)
             }
             Spacer()
             Button { showRules = true } label: {
@@ -98,9 +132,24 @@ struct ScoringView: View {
                             editing = EditTarget(participantID: participant.persistentModelID, index: throwIndex, previous: previous)
                             armed = false
                             expandedID = participant.persistentModelID
-                        }
+                        },
+                        onRename: { renaming = participant }
                     )
                 }
+                Button { showAddPlayer = true } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "plus")
+                        Text("Add a player").font(.suseExtraBold(14))
+                    }
+                    .foregroundStyle(Palette.lime)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 13)
+                    .background(Palette.lime.opacity(0.07), in: RoundedRectangle(cornerRadius: 15))
+                    .overlay(RoundedRectangle(cornerRadius: 15).strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [5]))
+                        .foregroundStyle(Palette.lime.opacity(0.4)))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 2)
             }
             .padding(.horizontal, 18)
             .padding(.top, 2)
@@ -177,6 +226,7 @@ struct ScoreRow: View {
     var isFlashing: Bool = false
     let onToggle: () -> Void
     let onEditThrow: (Int, Int) -> Void
+    var onRename: () -> Void = {}
 
     private var state: PlayerScoreState { participant.state(rules: rules) }
     private var allowed: Int { ScoringEngine.maxStrikes(rules: rules, isFirstTimer: participant.isFirstTimer) }
@@ -238,8 +288,16 @@ struct ScoreRow: View {
 
     private var throwsStrip: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("\(participant.name.split(separator: " ").first.map(String.init) ?? participant.name)'s throws · tap to fix")
-                .molkkyLabel()
+            HStack {
+                Text("\(participant.name.split(separator: " ").first.map(String.init) ?? participant.name)'s throws · tap to fix")
+                    .molkkyLabel()
+                Spacer()
+                Button(action: onRename) {
+                    Label("Rename", systemImage: "pencil")
+                        .font(.suseSemiBold(11)).foregroundStyle(Palette.lime)
+                }
+                .buttonStyle(.plain)
+            }
             if participant.throwValues.isEmpty {
                 Text("No throws yet").font(.suseExtraLight(12)).foregroundStyle(Palette.sage)
             } else {

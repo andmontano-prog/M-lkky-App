@@ -62,6 +62,43 @@ final class GameController {
         save()
     }
 
+    // MARK: - In-game roster management
+
+    /// Clear all scores and start the same roster over.
+    func restart() {
+        for p in game.participants {
+            p.throwValues = []
+            p.isFirstTimer = false
+        }
+        game.currentTurnIndex = 0
+        game.round = 1
+        game.isComplete = false
+        game.completedAt = nil
+        game.winnerName = nil
+        winner = nil
+        save()
+    }
+
+    /// Add a player after the game has started — they join at the end of the
+    /// throw order with a fresh score and take their turn when it comes around.
+    func addParticipant(named name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty,
+              !game.participants.contains(where: { $0.name.lowercased() == trimmed.lowercased() }) else { return }
+        let p = GameParticipant(name: trimmed, order: game.participants.count)
+        context.insert(p)
+        p.game = game
+        save()
+    }
+
+    /// Rename a player mid-game — scores are keyed by seat, so they stay put.
+    func rename(_ participant: GameParticipant, to newName: String) {
+        let trimmed = newName.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        participant.name = trimmed
+        save()
+    }
+
     // MARK: - Turn flow
 
     private func advanceTurn() {

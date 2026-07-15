@@ -186,6 +186,173 @@ struct RulesSheet: View {
     private func save() { try? context.save() }
 }
 
+// MARK: - Game menu (in-game management)
+
+struct GameMenuSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let round: Int
+    let onAdd: () -> Void
+    let onRestart: () -> Void
+    let onHome: () -> Void
+    let onEnd: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Capsule().fill(Color(hex: 0xCFCDC2)).frame(width: 40, height: 5)
+                .frame(maxWidth: .infinity).padding(.top, 8).padding(.bottom, 10)
+            Text("Game menu").font(.molkkyHeader(36)).foregroundStyle(Palette.forest)
+            Text("Round \(round) in progress.").font(.suseExtraLight(13)).foregroundStyle(Palette.inkSoft)
+                .padding(.bottom, 8)
+
+            row("plus", "Add a player") { dismiss(); onAdd() }
+            row("arrow.counterclockwise", "Restart game", detail: "clear scores") { dismiss(); onRestart() }
+            row("house", "Back to home", detail: "game is saved") { dismiss(); onHome() }
+            row("xmark", "End game & discard", danger: true) { dismiss(); onEnd() }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 22).padding(.bottom, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Palette.cream)
+    }
+
+    private func row(_ icon: String, _ title: String, detail: String? = nil, danger: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: icon).font(.system(size: 15, weight: .bold))
+                Text(title).font(.suseExtraBold(15))
+                Spacer()
+                if let detail { Text(detail).font(.suseExtraLight(12)).foregroundStyle(Palette.inkSoft) }
+            }
+            .foregroundStyle(danger ? Palette.danger : Palette.ink)
+            .padding(15)
+            .background(Palette.creamShade, in: RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Add player mid-game
+
+struct AddPlayerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Query(sort: \Player.name) private var players: [Player]
+    let existingNames: [String]
+    let onAdd: (String) -> Void
+    @State private var draft = ""
+
+    private var existingLower: Set<String> { Set(existingNames.map { $0.lowercased() }) }
+    private var suggestions: [Player] {
+        players.filter {
+            !existingLower.contains($0.name.lowercased()) &&
+            (draft.isEmpty || $0.name.localizedCaseInsensitiveContains(draft))
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Capsule().fill(Color(hex: 0xCFCDC2)).frame(width: 40, height: 5)
+                .frame(maxWidth: .infinity).padding(.top, 8).padding(.bottom, 6)
+            Text("Add a player").font(.molkkyHeader(36)).foregroundStyle(Palette.forest)
+            Text("They join at the end of the throw order.").font(.suseExtraLight(13)).foregroundStyle(Palette.inkSoft)
+
+            HStack(spacing: 9) {
+                TextField("", text: $draft, prompt: Text("Player name…").foregroundColor(Palette.gray))
+                    .font(.suseSemiBold(16)).foregroundStyle(Palette.ink)
+                    .padding(14)
+                    .background(Palette.creamShade, in: RoundedRectangle(cornerRadius: 13))
+                    .submitLabel(.done)
+                    .onSubmit(commit)
+                Button(action: commit) {
+                    Image(systemName: "plus").font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(Palette.forest).frame(width: 50, height: 50)
+                        .background(Palette.lime, in: RoundedRectangle(cornerRadius: 13))
+                }
+                .buttonStyle(.plain)
+            }
+
+            ScrollView {
+                VStack(spacing: 6) {
+                    ForEach(suggestions.prefix(6)) { player in
+                        Button { add(player.name) } label: {
+                            HStack(spacing: 12) {
+                                InitialsBadge(name: player.name, size: 32)
+                                Text(player.name).font(.suseSemiBold(14)).foregroundStyle(Palette.ink)
+                                Spacer()
+                                Image(systemName: "plus").foregroundStyle(Palette.forest)
+                            }
+                            .padding(.horizontal, 13).padding(.vertical, 10)
+                            .background(Palette.creamShade, in: RoundedRectangle(cornerRadius: 10))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 22).padding(.bottom, 20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Palette.cream)
+    }
+
+    private func commit() { add(draft) }
+    private func add(_ name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        onAdd(trimmed)
+        dismiss()
+    }
+}
+
+// MARK: - Rename mid-game
+
+struct RenameSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let currentName: String
+    let onSave: (String) -> Void
+    @State private var text: String
+
+    init(currentName: String, onSave: @escaping (String) -> Void) {
+        self.currentName = currentName
+        self.onSave = onSave
+        _text = State(initialValue: currentName)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Capsule().fill(Color(hex: 0xCFCDC2)).frame(width: 40, height: 5)
+                .frame(maxWidth: .infinity).padding(.top, 8).padding(.bottom, 6)
+            Text("Rename player").font(.molkkyHeader(36)).foregroundStyle(Palette.forest)
+            Text("Fix a typo or swap in a nickname — scores stay put.")
+                .font(.suseExtraLight(13)).foregroundStyle(Palette.inkSoft)
+            HStack(spacing: 9) {
+                TextField("", text: $text)
+                    .font(.suseSemiBold(16)).foregroundStyle(Palette.ink)
+                    .padding(14)
+                    .background(Palette.creamShade, in: RoundedRectangle(cornerRadius: 13))
+                    .submitLabel(.done)
+                    .onSubmit(save)
+                Button(action: save) {
+                    Image(systemName: "checkmark").font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(Palette.forest).frame(width: 50, height: 50)
+                        .background(Palette.lime, in: RoundedRectangle(cornerRadius: 13))
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 22).padding(.bottom, 20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Palette.cream)
+    }
+
+    private func save() {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        onSave(trimmed)
+        dismiss()
+    }
+}
+
 // MARK: - Resume prompt
 
 struct ResumePromptView: View {
