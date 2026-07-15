@@ -47,7 +47,15 @@ Tests/
 ## Rules engine
 
 A single throw is always worth **0–12** in Mölkky (one pin = its number, multiple pins =
-the count), so scoring input is a 0–12 pad. `ScoringEngine` (pure, no UI/SwiftData) applies:
+the count), so scoring input is a 0–12 pad.
+
+The pad stays **hidden between throwers** — a deliberate pause that cuts accidental taps and
+gives the scorekeeper a beat to review the board and announce who's up. Tap **"Enter [name]'s
+throw"** to reveal it; picking a number confirms and the pad hides again. There is **no undo**:
+mistakes are fixed by tapping **any** player to reveal their throws and editing the specific one
+(the real error mode), which recomputes everything downstream.
+
+`ScoringEngine` (pure, no UI/SwiftData) applies:
 
 - First to **exactly 50** wins (configurable).
 - **Overshoot** the target → reset to **25** (configurable).

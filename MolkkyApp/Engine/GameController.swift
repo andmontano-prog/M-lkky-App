@@ -41,15 +41,9 @@ final class GameController {
         save()
     }
 
-    func undoLastThrow() {
-        guard let player = current, !player.throwValues.isEmpty else { return }
-        var throwsCopy = player.throwValues
-        throwsCopy.removeLast()
-        player.throwValues = throwsCopy
-        save()
-    }
-
     /// Edit any past throw for a participant and recompute downstream state.
+    /// (There is no linear undo — mistakes are fixed by editing the specific
+    /// throw, which is how scoring errors actually happen.)
     func editThrow(for participant: GameParticipant, at index: Int, to value: Int) {
         guard participant.throwValues.indices.contains(index),
               ScoringEngine.isValidThrow(value) else { return }
