@@ -35,6 +35,7 @@ struct NewGameSetupView: View {
 
             footer
         }
+        .screenEntrance()
         .background(MolkkyBackground())
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .tabBar)
@@ -218,7 +219,10 @@ struct NewGameSetupView: View {
 
     private func add(_ name: String, lastPlayedAt: Date?) {
         guard !roster.contains(where: { $0.name.lowercased() == name.lowercased() }) else { return }
-        roster.append(RosterEntry(name: name, lastPlayedAt: lastPlayedAt))
+        // Slide the new card up into place (~200ms ease-in-out).
+        withAnimation(.easeInOut(duration: 0.2)) {
+            roster.append(RosterEntry(name: name, lastPlayedAt: lastPlayedAt))
+        }
         draft = ""
     }
 

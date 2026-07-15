@@ -14,6 +14,7 @@ struct ScoringView: View {
     @State private var armed = false
     @State private var editing: EditTarget?
     @State private var expandedID: PersistentIdentifier?
+    @State private var flashID: PersistentIdentifier?
 
     struct EditTarget: Equatable {
         let participantID: PersistentIdentifier
@@ -52,6 +53,7 @@ struct ScoringView: View {
             playerList(controller)
             padArea(controller)
         }
+        .screenEntrance()
     }
 
     // MARK: Header
@@ -102,6 +104,7 @@ struct ScoringView: View {
                         rules: game.rules,
                         isCurrent: index == game.currentTurnIndex && !participant.state(rules: game.rules).isEliminated,
                         isExpanded: expandedID == participant.persistentModelID,
+                        isFlashing: flashID == participant.persistentModelID,
                         onToggle: {
                             let id = participant.persistentModelID
                             expandedID = (expandedID == id) ? nil : id
@@ -137,9 +140,11 @@ struct ScoringView: View {
                         }
                         editing = nil
                     } else {
+                        let scoredID = controller.current?.persistentModelID
                         controller.recordThrow(value)
                         armed = false
                         expandedID = controller.current?.persistentModelID
+                        if let scoredID { triggerFlash(scoredID) }
                     }
                 },
                 onCancel: {
@@ -161,6 +166,14 @@ struct ScoringView: View {
     private func firstName(_ name: String) -> String {
         name.split(separator: " ").first.map(String.init) ?? name
     }
+
+    /// Quick lime pulse on the row that just scored — a visual confirm (~350ms).
+    private func triggerFlash(_ id: PersistentIdentifier) {
+        flashID = id
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            withAnimation(.easeOut(duration: 0.35)) { flashID = nil }
+        }
+    }
 }
 
 // MARK: - Score row (expandable to edit any player's throws)
@@ -170,6 +183,7 @@ struct ScoreRow: View {
     let rules: RuleConfig
     let isCurrent: Bool
     let isExpanded: Bool
+    var isFlashing: Bool = false
     let onToggle: () -> Void
     let onEditThrow: (Int, Int) -> Void
 
@@ -183,6 +197,12 @@ struct ScoreRow: View {
             if isExpanded { throwsStrip }
         }
         .background(isCurrent ? Palette.pineLift : Palette.pine, in: RoundedRectangle(cornerRadius: 15))
+        .overlay(
+            RoundedRectangle(cornerRadius: 15)
+                .fill(Palette.lime)
+                .opacity(isFlashing ? 0.28 : 0)
+                .allowsHitTesting(false)
+        )
         .overlay(RoundedRectangle(cornerRadius: 15).stroke(isCurrent ? Palette.lime : .clear, lineWidth: 1.5))
         .opacity(state.isEliminated ? 0.45 : 1)
     }

@@ -9,6 +9,25 @@ struct MolkkyBackground: View {
     }
 }
 
+/// Every screen animates in: content fades + slides up ~15pt on appear.
+/// (Tuned to ~280ms — a literal 2ms is imperceptible.)
+struct ScreenEntrance: ViewModifier {
+    @State private var shown = false
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown ? 1 : 0)
+            .offset(y: shown ? 0 : 15)
+            .onAppear {
+                shown = false
+                withAnimation(.easeOut(duration: 0.28)) { shown = true }
+            }
+    }
+}
+
+extension View {
+    func screenEntrance() -> some View { modifier(ScreenEntrance()) }
+}
+
 /// Big signature screen title + optional subtitle.
 struct ScreenTitle: View {
     let title: String

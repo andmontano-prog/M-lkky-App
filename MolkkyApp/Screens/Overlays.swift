@@ -18,12 +18,21 @@ struct WinOverlay: View {
                 Text("Game · Set · Match")
                     .font(.suseExtraBold(13)).tracking(3)
                     .foregroundStyle(Palette.forest)
-                Text("Winner")
-                    .font(.molkkyHeader(76))
-                    .foregroundStyle(Palette.forest)
-                    .scaleEffect(appeared ? 1 : 0.7)
+                // The winner's name is the hero — script font, animated in with a
+                // playful rotate + scale.
                 Text(name)
-                    .font(.suseExtraBold(30)).foregroundStyle(Palette.forest)
+                    .font(.molkkyHeader(72))
+                    .foregroundStyle(Palette.forest)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.5)
+                    .padding(.horizontal, 12)
+                    .scaleEffect(appeared ? 1 : 0.3)
+                    .rotationEffect(.degrees(appeared ? -3 : -14))
+                    .opacity(appeared ? 1 : 0)
+                Text("Winner")
+                    .font(.suseExtraBold(14)).tracking(3).textCase(.uppercase)
+                    .foregroundStyle(Palette.forest)
                 Text(reason)
                     .font(.suseExtraLight(15)).foregroundStyle(Palette.forest.opacity(0.75))
                 Button(action: onDone) {
@@ -40,17 +49,24 @@ struct WinOverlay: View {
             .padding(30)
         }
         .transition(.opacity)
-        .onAppear { withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) { appeared = true } }
+        .onAppear {
+            appeared = false
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.6)) { appeared = true }
+        }
     }
 }
 
 private struct Confetti: View {
-    private let colors: [Color] = [Palette.forest, Palette.cream, Palette.teal]
+    // Multi-green + yellow.
+    private let colors: [Color] = [
+        Palette.lime, Color(hex: 0xC4DE1E), Color(hex: 0x7ED33F),
+        Color(hex: 0x16563F), Color(hex: 0xEEFF74), Palette.cream
+    ]
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                ForEach(0..<24, id: \.self) { i in
-                    ConfettiPiece(color: colors[i % 3], width: geo.size.width, height: geo.size.height, seed: i)
+                ForEach(0..<44, id: \.self) { i in
+                    ConfettiPiece(color: colors[i % 6], width: geo.size.width, height: geo.size.height, seed: i)
                 }
             }
         }
@@ -67,17 +83,23 @@ private struct ConfettiPiece: View {
 
     var body: some View {
         let x = CGFloat((seed * 47) % 100) / 100 * width
-        RoundedRectangle(cornerRadius: 2)
-            .fill(color)
-            .frame(width: 9, height: 15)
-            .rotationEffect(.degrees(Double(seed) * 37))
-            .position(x: x, y: drop ? height + 40 : -40)
-            .opacity(drop ? 0.5 : 1)
-            .onAppear {
-                withAnimation(.easeIn(duration: 1.6 + Double(seed % 5) * 0.2).delay(Double(seed % 6) * 0.06)) {
-                    drop = true
-                }
+        let size = CGFloat(8 + (seed % 5) * 2)
+        let round = seed % 5 < 2
+        Group {
+            if round {
+                Circle().fill(color).frame(width: size, height: size)
+            } else {
+                RoundedRectangle(cornerRadius: 2).fill(color).frame(width: size, height: size * 1.6)
             }
+        }
+        .rotationEffect(.degrees(Double(seed) * 37))
+        .position(x: x, y: drop ? height + 40 : -40)
+        .opacity(drop ? 0.55 : 1)
+        .onAppear {
+            withAnimation(.easeIn(duration: 1.6 + Double(seed % 5) * 0.25).delay(Double(seed % 7) * 0.06)) {
+                drop = true
+            }
+        }
     }
 }
 

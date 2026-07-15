@@ -59,6 +59,7 @@ struct SettingsView: View {
                 }
                 .padding(.horizontal, 22)
                 .padding(.bottom, 30)
+                .screenEntrance()
             }
             .background(MolkkyBackground())
             .navigationBarTitleDisplayMode(.inline)
