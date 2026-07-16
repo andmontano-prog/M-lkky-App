@@ -102,7 +102,7 @@ struct ScoringView: View {
                 Text("Now throwing · Round \(game.round)").molkkyLabel()
                 Text(controller.current?.name ?? "—")
                     .font(.molkkyHeader(40)).foregroundStyle(Palette.lime)
-                    .lineLimit(1).minimumScaleFactor(0.6)
+                    .lineLimit(1).minimumScaleFactor(0.45)
             }
             Spacer()
             HStack(spacing: 8) {
