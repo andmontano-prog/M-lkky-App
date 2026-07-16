@@ -17,6 +17,7 @@ struct ScoringView: View {
     @State private var flashID: PersistentIdentifier?
     @State private var showGameMenu = false
     @State private var showAddPlayer = false
+    @State private var showStandings = false
     @State private var renaming: GameParticipant?
 
     struct EditTarget: Equatable {
@@ -71,6 +72,10 @@ struct ScoringView: View {
             }
             .presentationDetents([.height(280)])
         }
+        .sheet(isPresented: $showStandings) {
+            StandingsSheet(game: game)
+                .presentationDetents([.medium, .large])
+        }
     }
 
     private func content(_ controller: GameController) -> some View {
@@ -100,12 +105,21 @@ struct ScoringView: View {
                     .lineLimit(1).minimumScaleFactor(0.6)
             }
             Spacer()
-            Button { showRules = true } label: {
-                Image(systemName: "gearshape.fill")
-                    .foregroundStyle(Palette.cream)
-                    .frame(width: 42, height: 42)
-                    .background(Palette.cream.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Palette.cream.opacity(0.14), lineWidth: 1))
+            HStack(spacing: 8) {
+                Button { showStandings = true } label: {
+                    Image(systemName: "chart.bar.fill")
+                        .foregroundStyle(Palette.cream)
+                        .frame(width: 42, height: 42)
+                        .background(Palette.cream.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Palette.cream.opacity(0.14), lineWidth: 1))
+                }
+                Button { showRules = true } label: {
+                    Image(systemName: "gearshape.fill")
+                        .foregroundStyle(Palette.cream)
+                        .frame(width: 42, height: 42)
+                        .background(Palette.cream.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Palette.cream.opacity(0.14), lineWidth: 1))
+                }
             }
         }
         .padding(.horizontal, 20)

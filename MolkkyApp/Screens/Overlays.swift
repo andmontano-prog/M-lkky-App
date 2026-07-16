@@ -186,6 +186,97 @@ struct RulesSheet: View {
     private func save() { try? context.save() }
 }
 
+// MARK: - Standings ("here's where we are")
+
+struct StandingsSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let game: Game
+
+    private struct Standing: Identifiable {
+        let id: PersistentIdentifier
+        let name: String
+        let score: Int
+        let isOut: Bool
+    }
+
+    private var ranked: [Standing] {
+        let rules = game.rules
+        return game.orderedParticipants.map { p in
+            let s = p.state(rules: rules)
+            return Standing(id: p.persistentModelID, name: p.name, score: s.score, isOut: s.isEliminated)
+        }
+        // active players by points descending, eliminated sink to the bottom
+        .sorted { a, b in
+            if a.isOut != b.isOut { return !a.isOut }
+            return a.score > b.score
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Capsule().fill(Color(hex: 0xCFCDC2)).frame(width: 40, height: 5)
+                .frame(maxWidth: .infinity).padding(.top, 8).padding(.bottom, 12)
+            Text("Standings").font(.molkkyHeader(38)).foregroundStyle(Palette.forest)
+            Text("Round \(game.round) · here's where we are.")
+                .font(.suseExtraLight(13)).foregroundStyle(Palette.inkSoft)
+                .padding(.bottom, 8)
+
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(Array(ranked.enumerated()), id: \.element.id) { index, s in
+                        StandingRow(rank: index + 1, standing: s, target: game.rules.scoreToWin, isLeader: index == 0 && !s.isOut)
+                    }
+                }
+            }
+
+            PrimaryButton(title: "Back to game") { dismiss() }
+                .padding(.top, 12)
+        }
+        .padding(.horizontal, 22).padding(.bottom, 22)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Palette.cream)
+    }
+
+    private struct StandingRow: View {
+        let rank: Int
+        let standing: Standing
+        let target: Int
+        let isLeader: Bool
+
+        var body: some View {
+            HStack(spacing: 12) {
+                Text("\(rank)")
+                    .font(.molkkyHeader(38))
+                    .foregroundStyle(isLeader ? Palette.forest : Palette.gray)
+                    .frame(width: 44, alignment: .center)
+                InitialsBadge(name: standing.name, size: 36)
+                VStack(alignment: .leading, spacing: 5) {
+                    HStack(spacing: 6) {
+                        Text(standing.name).font(.suseExtraBold(15)).foregroundStyle(Palette.ink)
+                        if standing.isOut {
+                            Text("OUT").font(.suseExtraBold(10)).foregroundStyle(Palette.danger).tracking(1)
+                        }
+                    }
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(Palette.creamShade)
+                            Capsule().fill(Palette.forest)
+                                .frame(width: geo.size.width * CGFloat(min(1, Double(standing.score) / Double(max(target, 1)))))
+                        }
+                    }
+                    .frame(height: 8)
+                }
+                Text("\(standing.score)")
+                    .font(.suseExtraBold(26)).foregroundStyle(Palette.forest)
+                    .monospacedDigit().frame(minWidth: 44, alignment: .trailing)
+            }
+            .padding(.vertical, 11)
+            .opacity(standing.isOut ? 0.5 : 1)
+            .overlay(Rectangle().fill(Palette.creamShade).frame(height: 1), alignment: .bottom)
+        }
+    }
+}
+
 // MARK: - Game menu (in-game management)
 
 struct GameMenuSheet: View {
@@ -260,6 +351,8 @@ struct AddPlayerSheet: View {
                     .font(.suseSemiBold(16)).foregroundStyle(Palette.ink)
                     .padding(14)
                     .background(Palette.creamShade, in: RoundedRectangle(cornerRadius: 13))
+                    .autocorrectionDisabled(true)
+                    .textInputAutocapitalization(.words)
                     .submitLabel(.done)
                     .onSubmit(commit)
                 Button(action: commit) {
@@ -329,6 +422,8 @@ struct RenameSheet: View {
                     .font(.suseSemiBold(16)).foregroundStyle(Palette.ink)
                     .padding(14)
                     .background(Palette.creamShade, in: RoundedRectangle(cornerRadius: 13))
+                    .autocorrectionDisabled(true)
+                    .textInputAutocapitalization(.words)
                     .submitLabel(.done)
                     .onSubmit(save)
                 Button(action: save) {

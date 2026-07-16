@@ -99,6 +99,8 @@ struct NewGameSetupView: View {
                 .padding(15)
                 .background(Palette.cream.opacity(0.07), in: RoundedRectangle(cornerRadius: 13))
                 .overlay(RoundedRectangle(cornerRadius: 13).stroke(Palette.cream.opacity(0.16), lineWidth: 1))
+                .autocorrectionDisabled(true)
+                .textInputAutocapitalization(.words)
                 .submitLabel(.done)
                 .onSubmit { commitDraft() }
             Button { commitDraft() } label: {
