@@ -27,8 +27,11 @@ struct RulesView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("How to\nplay").font(.molkkyHeader(46)).foregroundStyle(Palette.forest)
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("How to\nplay")
+                        .font(.molkkyHeader(46))
+                        .lineSpacing(8)               // room for the script descenders on "play"
+                        .foregroundStyle(Palette.forest)
                     Text("Knock 'em down. Hit fifty. Don't overcook it.")
                         .font(.suseSemiBold(13)).foregroundStyle(Palette.forest.opacity(0.8))
                 }
@@ -68,7 +71,7 @@ struct RulesView: View {
                         .frame(width: 28, alignment: .leading)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(rule.title).font(.suseExtraBold(15)).foregroundStyle(Palette.cream)
-                        Text(rule.body).font(.suseExtraLight(13)).foregroundStyle(Palette.sage)
+                        Text(rule.body).font(.suseExtraLight(13)).foregroundStyle(Palette.mist)
                             .tint(Palette.lime)
                     }
                     Spacer(minLength: 0)
