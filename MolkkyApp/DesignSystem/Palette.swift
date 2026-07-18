@@ -13,7 +13,7 @@ enum Palette {
     static let cream     = Color(hex: 0xF9F7F2) // paper
     static let creamShade = Color(hex: 0xEFEDE3)
     static let gray      = Color(hex: 0x898A8D) // muted neutral
-    static let sage      = Color(hex: 0x7E9A8C) // green-biased muted text on dark
+    static let sage      = Color(hex: 0x9BB4A7) // green-biased muted text on dark (AA ≥4.8:1 on pine/forest)
     static let mist      = Color(hex: 0xEAF0EC) // near-white body text on dark (high contrast)
     static let ink       = Color(hex: 0x0C3B2E) // text on cream
     static let inkSoft   = Color(hex: 0x4A5A52) // muted text on cream

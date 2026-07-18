@@ -564,7 +564,7 @@ struct AddPlayerSheet: View {
             Text("They join at the end of the throw order.").font(.suseExtraLight(13)).foregroundStyle(Palette.inkSoft)
 
             HStack(spacing: 9) {
-                TextField("", text: $draft, prompt: Text("Player name…").foregroundColor(Palette.gray))
+                TextField("", text: $draft, prompt: Text("Player name…").foregroundColor(Palette.inkSoft))
                     .font(.suseSemiBold(16)).foregroundStyle(Palette.ink)
                     .padding(14)
                     .background(Palette.creamShade, in: RoundedRectangle(cornerRadius: 13))
