@@ -498,6 +498,7 @@ struct GameMenuSheet: View {
     @Environment(\.dismiss) private var dismiss
     let round: Int
     let onAdd: () -> Void
+    let onHowTo: () -> Void
     let onRestart: () -> Void
     let onHome: () -> Void
     let onEnd: () -> Void
@@ -511,6 +512,7 @@ struct GameMenuSheet: View {
                 .padding(.bottom, 8)
 
             row("plus", "Add a player") { dismiss(); onAdd() }
+            row("questionmark.circle", "How to play", detail: "rules & pin setup") { dismiss(); onHowTo() }
             row("arrow.counterclockwise", "Restart game", detail: "clear scores") { dismiss(); onRestart() }
             row("house", "Back to home", detail: "game is saved") { dismiss(); onHome() }
             row("xmark", "End game & discard", danger: true) { dismiss(); onEnd() }

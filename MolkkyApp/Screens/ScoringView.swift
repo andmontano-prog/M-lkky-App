@@ -16,6 +16,7 @@ struct ScoringView: View {
     @State private var expandedID: PersistentIdentifier?
     @State private var flashID: PersistentIdentifier?
     @State private var showGameMenu = false
+    @State private var showHowTo = false
     @State private var showAddPlayer = false
     @State private var showStandings = false
     @State private var renaming: GameParticipant?
@@ -58,11 +59,23 @@ struct ScoringView: View {
             GameMenuSheet(
                 round: game.round,
                 onAdd: { DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showAddPlayer = true } },
+                onHowTo: { DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showHowTo = true } },
                 onRestart: { controller?.restart(); armed = false; editing = nil; expandedID = game.currentParticipant?.persistentModelID },
                 onHome: { path.removeAll() },
                 onEnd: { context.delete(game); try? context.save(); path.removeAll() }
             )
-            .presentationDetents([.height(430)])
+            .presentationDetents([.height(470)])
+        }
+        .sheet(isPresented: $showHowTo) {
+            NavigationStack {
+                RulesView()
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("Done") { showHowTo = false }
+                                .font(.suseSemiBold(15)).foregroundStyle(Palette.lime)
+                        }
+                    }
+            }
         }
         .sheet(isPresented: $showAddPlayer) {
             AddPlayerSheet(existingNames: game.participants.map { $0.name }) { name in

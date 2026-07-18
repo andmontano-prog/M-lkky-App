@@ -12,13 +12,15 @@ struct RulesView: View {
     }
 
     private let rules: [Rule] = [
-        Rule(id: 1, image: "rule-toss", title: "Toss the baton",
+        Rule(id: 1, image: "rule-setup", title: "Set up the pins",
+             body: try! AttributedString(markdown: "Tight diamond, **numbers facing you**, about **3.5 m** from the throwing line.")),
+        Rule(id: 2, image: "rule-toss", title: "Toss the baton",
              body: "Underhand, from behind the line, at the numbered pins."),
-        Rule(id: 2, image: "rule-count", title: "Count what falls",
+        Rule(id: 3, image: "rule-count", title: "Count what falls",
              body: try! AttributedString(markdown: "**One pin** = its number. **Two or more** = how many fell.")),
-        Rule(id: 3, image: "rule-fifty", title: "Race to exactly 50",
+        Rule(id: 4, image: "rule-fifty", title: "Race to exactly 50",
              body: try! AttributedString(markdown: "First to **50** wins. Go over and you drop back to **25**.")),
-        Rule(id: 4, image: "rule-out", title: "Three misses, you're out",
+        Rule(id: 5, image: "rule-out", title: "Three misses, you're out",
              body: try! AttributedString(markdown: "Whiff **three times** in a row and you're eliminated. New players can earn a fourth."))
     ]
 
