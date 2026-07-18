@@ -17,7 +17,9 @@ struct HomeView: View {
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    ScreenTitle(title: "Mölkky Go", subtitle: "Ready when you are.")
+                    FlyingBatonHero()
+                        .padding(.top, 4)
+                    ScreenTitle(title: "Baton Club", subtitle: "Throw Baton! Crash the Skittles!")
                         .padding(.bottom, 4)
 
                     startCard
