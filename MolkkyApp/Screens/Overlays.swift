@@ -311,12 +311,21 @@ struct RulesSheet: View {
 
             stepper("Score to win", "Reach it exactly",
                     value: game.ruleScoreToWin,
-                    onChange: { game.ruleScoreToWin = max(10, min(100, game.ruleScoreToWin + $0 * 5)); save() })
+                    canDecrement: game.ruleScoreToWin > 10, canIncrement: game.ruleScoreToWin < 100,
+                    onChange: {
+                        game.ruleScoreToWin = max(10, min(100, game.ruleScoreToWin + $0 * 5))
+                        // reset always tracks the win score: half, rounded up
+                        game.ruleOvershootReset = Int((Double(game.ruleScoreToWin) / 2).rounded(.up))
+                        save()
+                    })
             stepper("Overshoot resets to", "Go over, drop to this",
                     value: game.ruleOvershootReset,
-                    onChange: { game.ruleOvershootReset = max(0, min(game.ruleScoreToWin - 5, game.ruleOvershootReset + $0 * 5)); save() })
+                    canDecrement: game.ruleOvershootReset > 0,
+                    canIncrement: game.ruleOvershootReset < game.ruleScoreToWin - 1,
+                    onChange: { game.ruleOvershootReset = max(0, min(game.ruleScoreToWin - 1, game.ruleOvershootReset + $0 * 5)); save() })
             stepper("Strikes before out", "Misses in a row",
                     value: game.ruleStrikesToEliminate,
+                    canDecrement: game.ruleStrikesToEliminate > 1, canIncrement: game.ruleStrikesToEliminate < 6,
                     onChange: { game.ruleStrikesToEliminate = max(1, min(6, game.ruleStrikesToEliminate + $0)); save() })
 
             HStack {
@@ -343,7 +352,9 @@ struct RulesSheet: View {
         .background(Palette.cream)
     }
 
-    private func stepper(_ title: String, _ subtitle: String, value: Int, onChange: @escaping (Int) -> Void) -> some View {
+    private func stepper(_ title: String, _ subtitle: String, value: Int,
+                         canDecrement: Bool = true, canIncrement: Bool = true,
+                         onChange: @escaping (Int) -> Void) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.suseSemiBold(15)).foregroundStyle(Palette.ink)
@@ -351,10 +362,10 @@ struct RulesSheet: View {
             }
             Spacer()
             HStack(spacing: 2) {
-                stepButton("minus") { onChange(-1) }
+                stepButton("minus", enabled: canDecrement) { onChange(-1) }
                 Text("\(value)").font(.suseExtraBold(16)).foregroundStyle(Palette.forest)
                     .frame(minWidth: 38).monospacedDigit()
-                stepButton("plus") { onChange(1) }
+                stepButton("plus", enabled: canIncrement) { onChange(1) }
             }
             .padding(3)
             .background(Palette.creamShade, in: RoundedRectangle(cornerRadius: 11))
@@ -363,14 +374,16 @@ struct RulesSheet: View {
         .overlay(Divider().overlay(Palette.creamShade), alignment: .bottom)
     }
 
-    private func stepButton(_ symbol: String, action: @escaping () -> Void) -> some View {
+    private func stepButton(_ symbol: String, enabled: Bool = true, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 15, weight: .bold))
                 .foregroundStyle(Palette.forest)
+                .opacity(enabled ? 1 : 0.3)
                 .frame(width: 34, height: 34)
                 .background(Palette.cream, in: RoundedRectangle(cornerRadius: 9))
         }
         .buttonStyle(.plain)
+        .disabled(!enabled)
     }
 
     private func save() { try? context.save() }

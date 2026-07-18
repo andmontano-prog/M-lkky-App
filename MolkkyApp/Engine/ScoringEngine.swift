@@ -50,7 +50,9 @@ enum ScoringEngine {
                 state.missStreak = 0
                 let next = state.score + value
                 if next > rules.scoreToWin {
-                    state.score = rules.overshootReset
+                    // Safety: a reset must never land at/above the win score,
+                    // otherwise a player can get stuck resetting forever.
+                    state.score = min(rules.overshootReset, rules.scoreToWin - 1)
                     state.resetThrowIndices.append(index)
                 } else {
                     state.score = next
