@@ -19,6 +19,7 @@ struct ScoringView: View {
     @State private var showAddPlayer = false
     @State private var showStandings = false
     @State private var renaming: GameParticipant?
+    @State private var strikeOutName: String?
 
     struct EditTarget: Equatable {
         let participantID: PersistentIdentifier
@@ -31,6 +32,10 @@ struct ScoringView: View {
             MolkkyBackground()
             if let controller {
                 content(controller)
+                if let name = strikeOutName, controller.winner == nil {
+                    StrikeOutOverlay(name: name) { strikeOutName = nil }
+                        .transition(.opacity)
+                }
                 if let champ = controller.winner {
                     WinOverlay(name: champ.name, reason: controller.winReason) {
                         path.removeAll()
@@ -194,11 +199,17 @@ struct ScoringView: View {
                         }
                         editing = nil
                     } else {
-                        let scoredID = controller.current?.persistentModelID
+                        let scored = controller.current
+                        let wasOut = scored?.state(rules: game.rules).isEliminated ?? false
                         controller.recordThrow(value)
                         armed = false
                         expandedID = controller.current?.persistentModelID
-                        if let scoredID { triggerFlash(scoredID) }
+                        if let id = scored?.persistentModelID { triggerFlash(id) }
+                        // just eliminated (and the game didn't end) → strike-out animation
+                        if let scored, !wasOut, scored.state(rules: game.rules).isEliminated,
+                           controller.winner == nil {
+                            strikeOutName = scored.name.split(separator: " ").first.map(String.init) ?? scored.name
+                        }
                     }
                 },
                 onCancel: {
@@ -244,6 +255,8 @@ struct ScoreRow: View {
 
     private var state: PlayerScoreState { participant.state(rules: rules) }
     private var allowed: Int { ScoringEngine.maxStrikes(rules: rules, isFirstTimer: participant.isFirstTimer) }
+    /// Current thrower, one miss from elimination — warn with a red outline.
+    private var brink: Bool { isCurrent && state.missStreak > 0 && state.missStreak >= allowed - 1 }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -258,7 +271,12 @@ struct ScoreRow: View {
                 .opacity(isFlashing ? 0.28 : 0)
                 .allowsHitTesting(false)
         )
-        .overlay(RoundedRectangle(cornerRadius: 15).stroke(isCurrent ? Palette.lime : .clear, lineWidth: 1.5))
+        .overlay(
+            RoundedRectangle(cornerRadius: 15)
+                .stroke(brink ? Palette.danger : (isCurrent ? Palette.lime : .clear),
+                        lineWidth: brink ? 2.5 : 1.5)
+        )
+        .shadow(color: brink ? Palette.danger.opacity(0.5) : .clear, radius: 8)
         .opacity(state.isEliminated ? 0.45 : 1)
     }
 

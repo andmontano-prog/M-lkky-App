@@ -24,10 +24,11 @@ struct NewGameSetupView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            actionBar
+            topBar
             ScreenTitle(title: "New game")
                 .padding(.horizontal, 22)
                 .padding(.bottom, 8)
+            playerOrderBar
 
             addRow
             suggestions
@@ -42,29 +43,47 @@ struct NewGameSetupView: View {
         .onAppear { if roster.isEmpty { roster = seedNames.map { entry(for: $0) } } }
     }
 
-    // MARK: Action bar
+    // MARK: Top bar — Back / Start over (separate from player-order actions)
 
-    private var actionBar: some View {
-        HStack(spacing: 6) {
-            barButton("chevron.left") { dismiss() }
-            barButton("arrow.counterclockwise") { roster.removeAll() }
-            barButton("shuffle") { roster.shuffle() }
-            Menu {
-                Button("Name · A–Z") { roster.sort { $0.name < $1.name } }
-                Button("Name · Z–A") { roster.sort { $0.name > $1.name } }
-                Button("Random") { roster.shuffle() }
-            } label: {
-                barLabel("arrow.up.arrow.down")
-            }
+    private var topBar: some View {
+        HStack {
+            labeledButton("chevron.left", "Back") { dismiss() }
             Spacer()
+            labeledButton("arrow.counterclockwise", "Start over") { withAnimation { roster.removeAll() } }
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 4)
+        .padding(.bottom, 8)
+    }
+
+    // MARK: Player-order actions
+
+    private var playerOrderBar: some View {
+        HStack(spacing: 8) {
+            Text("Player Order")
+                .font(.suseSemiBold(11)).textCase(.uppercase).tracking(1.4)
+                .foregroundStyle(Palette.sage)
+            orderButton("shuffle", "Randomize") { withAnimation { roster.shuffle() } }
+            Menu {
+                Button("Name · A–Z") { withAnimation { roster.sort { $0.name < $1.name } } }
+                Button("Name · Z–A") { withAnimation { roster.sort { $0.name > $1.name } } }
+                Button("Random") { withAnimation { roster.shuffle() } }
+            } label: {
+                orderLabel("arrow.up.arrow.down", "Sort")
+            }
             if roster.count >= largeGameThreshold {
+                Spacer()
                 Button { showWarningNote = true } label: {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(Palette.danger)
-                        .frame(width: 40, height: 40)
-                        .background(Palette.danger.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Palette.danger.opacity(0.5), lineWidth: 1))
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                        Text("Long game").font(.suseSemiBold(12))
+                    }
+                    .foregroundStyle(Palette.danger)
+                    .padding(.horizontal, 12).padding(.vertical, 9)
+                    .background(Palette.danger.opacity(0.1), in: RoundedRectangle(cornerRadius: 11))
+                    .overlay(RoundedRectangle(cornerRadius: 11).stroke(Palette.danger.opacity(0.5), lineWidth: 1))
                 }
+                .buttonStyle(.plain)
                 .alert("Big game ahead", isPresented: $showWarningNote) {
                     Button("Got it", role: .cancel) { }
                 } message: {
@@ -72,21 +91,37 @@ struct NewGameSetupView: View {
                 }
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.top, 4)
-        .padding(.bottom, 10)
+        .padding(.horizontal, 22)
+        .padding(.bottom, 8)
     }
 
-    private func barButton(_ symbol: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) { barLabel(symbol) }
-    }
-    private func barLabel(_ symbol: String) -> some View {
-        Image(systemName: symbol)
-            .font(.system(size: 17, weight: .semibold))
+    private func labeledButton(_ symbol: String, _ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: symbol).font(.system(size: 14, weight: .semibold))
+                Text(title).font(.suseSemiBold(14))
+            }
             .foregroundStyle(Palette.cream)
-            .frame(width: 40, height: 40)
-            .background(Palette.cream.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Palette.cream.opacity(0.14), lineWidth: 1))
+            .padding(.horizontal, 14).padding(.vertical, 9)
+            .background(Palette.cream.opacity(0.06), in: RoundedRectangle(cornerRadius: 11))
+            .overlay(RoundedRectangle(cornerRadius: 11).stroke(Palette.cream.opacity(0.14), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func orderButton(_ symbol: String, _ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) { orderLabel(symbol, title) }.buttonStyle(.plain)
+    }
+
+    private func orderLabel(_ symbol: String, _ title: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: symbol).font(.system(size: 13, weight: .semibold))
+            Text(title).font(.suseSemiBold(13))
+        }
+        .foregroundStyle(Palette.cream)
+        .padding(.horizontal, 13).padding(.vertical, 9)
+        .background(Palette.pine, in: RoundedRectangle(cornerRadius: 11))
+        .overlay(RoundedRectangle(cornerRadius: 11).stroke(Palette.lime.opacity(0.16), lineWidth: 1))
     }
 
     // MARK: Add + autocomplete
