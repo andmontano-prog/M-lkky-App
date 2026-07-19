@@ -25,12 +25,12 @@ struct SplashView: View {
                 Swoosh()
                     .stroke(Palette.lime, style: StrokeStyle(lineWidth: 7, lineCap: .round))
                     .frame(width: 64, height: 24)
-                    .offset(x: -104 + (linesIn ? 0 : -80), y: -30)
+                    .offset(x: -95 + (linesIn ? 0 : -80), y: -37)
                     .opacity(linesVisible ? 1 : 0)
                 Swoosh()
                     .stroke(Palette.lime, style: StrokeStyle(lineWidth: 7, lineCap: .round))
                     .frame(width: 72, height: 26)
-                    .offset(x: -110 + (linesIn ? 0 : -80), y: 2)
+                    .offset(x: -103 + (linesIn ? 0 : -80), y: 0)
                     .opacity(linesVisible ? 1 : 0)
 
                 // Baton (pill + eyes).
@@ -39,6 +39,7 @@ struct SplashView: View {
                     .rotationEffect(.degrees(batonIn ? 0 : -25))   // extra entrance spin, unwinds to the rest tilt
                     .offset(x: batonIn ? 0 : -300, y: batonIn ? 0 : 100)
                     .opacity(batonVisible ? 1 : 0)
+                    .zIndex(1)
             }
             .offset(y: -42)   // sits just above center, matching the Figma frame
         }
@@ -47,21 +48,22 @@ struct SplashView: View {
 
     private var baton: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Palette.lime).frame(width: 72, height: 150)
-            HStack(spacing: 12) {
+            // 218×521 @ cornerRadius 50 in Figma → scaled to points (× ~0.42).
+            RoundedRectangle(cornerRadius: 21, style: .circular)
+                .fill(Palette.lime).frame(width: 92, height: 219)
+            HStack(spacing: 6) {
                 eye
                 eye
             }
-            .offset(y: -34)
+            .offset(y: -50)
         }
-        .rotationEffect(.degrees(-14))   // resting tilt, baked into the shape
+        .rotationEffect(.degrees(22.58))   // resting tilt from Figma, baked into the shape
     }
 
     private var eye: some View {
         EyeArc()
             .stroke(Palette.forest, style: StrokeStyle(lineWidth: 4.5, lineCap: .round))
-            .frame(width: 20, height: 11)
+            .frame(width: 15, height: 11)
             .scaleEffect(eyesOpen ? 1 : 0.3)
     }
 

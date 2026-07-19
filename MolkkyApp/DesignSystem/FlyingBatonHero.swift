@@ -31,22 +31,23 @@ struct FlyingBatonHero: View {
 
     private var baton: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            // Same 1:2.39 proportions / ~23%-radius as the splash, scaled to fit the hero.
+            RoundedRectangle(cornerRadius: 9, style: .circular)
                 .fill(Palette.lime)
-                .frame(width: 48, height: 100)
-            HStack(spacing: 9) {
+                .frame(width: 40, height: 96)
+            HStack(spacing: 4) {
                 eye
                 eye
             }
             .offset(y: -22)
         }
-        .rotationEffect(.degrees(-14))
+        .rotationEffect(.degrees(22.58))
     }
 
     private var eye: some View {
         EyeArc()
-            .stroke(Palette.forest, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
-            .frame(width: 14, height: 8)
+            .stroke(Palette.forest, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+            .frame(width: 8, height: 6)
     }
 
     private func runFlyIn() {
