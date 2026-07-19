@@ -36,7 +36,8 @@ struct ScreenTitle: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.molkkyHeader(52))
-                .lineSpacing(6)                // room for script descenders on multi-line titles
+                .lineLimit(1)                  // keep long titles (e.g. Wooden Bowling) on one line
+                .minimumScaleFactor(0.5)       // …shrinking to fit instead of wrapping
                 .foregroundStyle(Palette.cream)
             if let subtitle {
                 Text(subtitle)

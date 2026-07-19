@@ -18,6 +18,8 @@ struct MolkkyAppMain: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
+                Palette.forest.ignoresSafeArea()   // forest floor — no white flash in the launch→SwiftUI gap
+
                 RootTabView()
                     .tint(Palette.lime)
                     .preferredColorScheme(.dark)
