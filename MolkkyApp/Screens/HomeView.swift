@@ -19,7 +19,7 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     FlyingBatonHero()
                         .padding(.top, 4)
-                    ScreenTitle(title: "Baton Club", subtitle: "Throw Baton! Crash the Skittles!")
+                    ScreenTitle(title: "Bowl", subtitle: "Throw Baton! Crash the Skittles!")
                         .padding(.bottom, 4)
 
                     startCard

@@ -1,8 +1,9 @@
-# Baton Club
+# Wooden Bowling
 
-A better iOS scorer for the Finnish lawn game **Mölkky** — fast to set up, delightful
-to score, and built in a heritage lawn-sport aesthetic. Fully **local and offline**:
-no account, no backend, no network. Everything lives on the device.
+**Wooden Bowling** (shown as **Bowl** on the home screen) — a better iOS scorer for the
+Finnish lawn game **Mölkky** — fast to set up, delightful to score, and built in a
+heritage lawn-sport aesthetic. Fully **local and offline**: no account, no backend,
+no network. Everything lives on the device.
 
 > **v0.1 scaffold.** This is the first cut of the real app, authored to match an
 > interactive design prototype. It has **not yet been compiled** (see note below).
