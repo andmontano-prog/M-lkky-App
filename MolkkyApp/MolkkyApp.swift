@@ -13,11 +13,23 @@ struct MolkkyAppMain: App {
         }
     }()
 
+    @State private var showSplash = true
+
     var body: some Scene {
         WindowGroup {
-            RootTabView()
-                .tint(Palette.lime)
-                .preferredColorScheme(.dark)
+            ZStack {
+                RootTabView()
+                    .tint(Palette.lime)
+                    .preferredColorScheme(.dark)
+
+                if showSplash {
+                    SplashView(onFinish: {
+                        withAnimation(.easeOut(duration: 0.35)) { showSplash = false }
+                    })
+                    .transition(.opacity)
+                    .zIndex(1)
+                }
+            }
         }
         .modelContainer(modelContainer)
     }
