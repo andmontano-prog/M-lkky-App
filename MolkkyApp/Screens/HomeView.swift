@@ -19,7 +19,7 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     FlyingBatonHero()
                         .padding(.top, 4)
-                    ScreenTitle(title: "Wooden Bowling", subtitle: "Throw Baton! Crash the Skittles!")
+                    ScreenTitle(title: "Wooden Bowling", subtitle: "Play Mölkky! Score Points!")
                         .padding(.bottom, 4)
 
                     startCard
@@ -76,7 +76,7 @@ struct HomeView: View {
             ZStack(alignment: .topTrailing) {
                 SkittleCluster().opacity(0.18).offset(x: 6, y: -6)
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Start\nnew game")
+                    Text("New Game")
                         .font(.molkkyHeader(44))
                         .foregroundStyle(Palette.forest)
                     Text("Build a roster in seconds")

@@ -511,8 +511,8 @@ struct GameMenuSheet: View {
             Text("Round \(round) in progress.").font(.suseExtraLight(13)).foregroundStyle(Palette.inkSoft)
                 .padding(.bottom, 8)
 
+            row("questionmark.circle", "How to play", detail: "rules & pin setup", inverted: true) { dismiss(); onHowTo() }
             row("plus", "Add a player") { dismiss(); onAdd() }
-            row("questionmark.circle", "How to play", detail: "rules & pin setup") { dismiss(); onHowTo() }
             row("arrow.counterclockwise", "Restart game", detail: "clear scores") { dismiss(); onRestart() }
             row("house", "Back to home", detail: "game is saved") { dismiss(); onHome() }
             row("xmark", "End game & discard", danger: true) { dismiss(); onEnd() }
@@ -523,17 +523,24 @@ struct GameMenuSheet: View {
         .background(Palette.cream)
     }
 
-    private func row(_ icon: String, _ title: String, detail: String? = nil, danger: Bool = false, action: @escaping () -> Void) -> some View {
+    private func row(_ icon: String, _ title: String, detail: String? = nil,
+                     danger: Bool = false, inverted: Bool = false,
+                     action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 10) {
                 Image(systemName: icon).font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(inverted ? Palette.lime : (danger ? Palette.danger : Palette.ink))
                 Text(title).font(.suseExtraBold(15))
+                    .foregroundStyle(inverted ? Palette.cream : (danger ? Palette.danger : Palette.ink))
                 Spacer()
-                if let detail { Text(detail).font(.suseExtraLight(12)).foregroundStyle(Palette.inkSoft) }
+                if let detail {
+                    Text(detail).font(.suseExtraLight(12))
+                        .foregroundStyle(inverted ? Palette.sage : Palette.inkSoft)
+                }
             }
-            .foregroundStyle(danger ? Palette.danger : Palette.ink)
             .padding(15)
-            .background(Palette.creamShade, in: RoundedRectangle(cornerRadius: 12))
+            .background(inverted ? Palette.forest : Palette.creamShade,
+                        in: RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
     }
