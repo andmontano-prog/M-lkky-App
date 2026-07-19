@@ -47,7 +47,8 @@ struct SplashView: View {
 
     private var baton: some View {
         ZStack {
-            Capsule().fill(Palette.lime).frame(width: 72, height: 150)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Palette.lime).frame(width: 72, height: 150)
             HStack(spacing: 12) {
                 eye
                 eye

@@ -33,9 +33,10 @@ struct ScreenTitle: View {
     let title: String
     var subtitle: String? = nil
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.molkkyHeader(52))
+                .lineSpacing(6)                // room for script descenders on multi-line titles
                 .foregroundStyle(Palette.cream)
             if let subtitle {
                 Text(subtitle)
