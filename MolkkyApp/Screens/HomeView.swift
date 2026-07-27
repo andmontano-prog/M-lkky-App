@@ -16,36 +16,43 @@ struct HomeView: View {
     var body: some View {
         NavigationStack(path: $path) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    FlyingBatonHero()
+                VStack(spacing: 0) {
+                    WordmarkHeader()
+                        .padding(.top, 10)
+                    Text("Play Mölkky! Score Points!")
+                        .font(.suseExtraLight(13))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
                         .padding(.top, 4)
-                    ScreenTitle(title: "Wooden Bowling", subtitle: "Play Mölkky! Score Points!")
-                        .padding(.bottom, 4)
+                        .padding(.bottom, 20)
 
-                    startCard
-                    managePlayersTile
+                    VStack(alignment: .leading, spacing: 12) {
+                        startCard
+                        managePlayersTile
 
-                    HStack {
-                        Text("Recent games").font(.suseExtraBold(15)).foregroundStyle(Palette.cream)
-                        Spacer()
-                    }
-                    .padding(.top, 12)
+                        HStack {
+                            Text("Recent games").font(.suseExtraBold(15)).foregroundStyle(Palette.cream)
+                            Spacer()
+                        }
+                        .padding(.top, 12)
 
-                    if recent.isEmpty {
-                        Text("No games yet — your first win goes here.")
-                            .font(.suseExtraLight(14))
-                            .foregroundStyle(Palette.sage)
-                            .padding(.vertical, 8)
-                    } else {
-                        ForEach(recent) { game in
-                            RecentGameRow(game: game)
+                        if recent.isEmpty {
+                            Text("No games yet — your first win goes here.")
+                                .font(.suseExtraLight(14))
+                                .foregroundStyle(Palette.sage)
+                                .padding(.vertical, 8)
+                        } else {
+                            ForEach(recent) { game in
+                                RecentGameRow(game: game)
+                            }
                         }
                     }
+                    .padding(.horizontal, 22)
+                    .padding(.bottom, 30)
                 }
-                .padding(.horizontal, 22)
-                .padding(.bottom, 30)
                 .screenEntrance()
             }
+            .clipped()
             .background(MolkkyBackground())
             .navigationBarTitleDisplayMode(.inline)
             .gameFlowDestinations(path: $path)
@@ -73,8 +80,7 @@ struct HomeView: View {
         Button {
             path.append(.setup(seedNames: []))
         } label: {
-            ZStack(alignment: .topTrailing) {
-                SkittleCluster().opacity(0.18).offset(x: 6, y: -6)
+            HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("New Game")
                         .font(.molkkyHeader(44))
@@ -83,10 +89,12 @@ struct HomeView: View {
                         .font(.suseSemiBold(13))
                         .foregroundStyle(Palette.forest.opacity(0.72))
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(22)
+                Spacer(minLength: 0)
+                ButtonBaton()
             }
-            .background(Palette.lime, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .padding(20)
+            .frame(maxWidth: .infinity, minHeight: 125, alignment: .leading)
+            .background(Palette.lime, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -153,5 +161,51 @@ struct SkittleCluster: View {
                     .foregroundStyle(Palette.forest)
             }
         }
+    }
+}
+
+/// The angled, edge-clipping "Wooden / Bowling" wordmark (Momo Signature 82pt,
+/// each line rotated −14.04°, white) — matches the Figma home header.
+struct WordmarkHeader: View {
+    var body: some View {
+        ZStack {
+            Text("Wooden")
+                .rotationEffect(.degrees(-14.04))
+                .offset(y: -52)
+            Text("Bowling")
+                .rotationEffect(.degrees(-14.04))
+                .offset(y: 52)
+        }
+        .font(.molkkyHeader(82))
+        .foregroundStyle(.white)
+        .lineLimit(1)
+        .fixedSize()                 // let the words overflow (bleed off both edges)
+        .frame(maxWidth: .infinity)
+        .frame(height: 210)
+    }
+}
+
+/// The New Game button's mascot: a forest baton with lime eyes (inverted for
+/// the light chartreuse button), tilted per Figma.
+struct ButtonBaton: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 5, style: .circular)
+                .fill(Palette.forest)
+                .frame(width: 22, height: 52)
+            HStack(spacing: 4) {
+                eye
+                eye
+            }
+            .offset(y: -12)
+        }
+        .rotationEffect(.degrees(31.62))
+        .frame(width: 56, height: 62)
+    }
+
+    private var eye: some View {
+        EyeArc()
+            .stroke(Palette.lime, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+            .frame(width: 7, height: 5)
     }
 }
