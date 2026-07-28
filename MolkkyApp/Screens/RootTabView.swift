@@ -14,6 +14,8 @@ struct RootTabView: View {
                 .tabItem { Label("Home", systemImage: "house.fill") }
             GamesListView()
                 .tabItem { Label("Games", systemImage: "square.grid.2x2.fill") }
+            LeaderboardView()
+                .tabItem { Label("Leaderboard", systemImage: "trophy.fill") }
             SettingsView()
                 .tabItem { Label("Settings", systemImage: "gearshape.fill") }
         }

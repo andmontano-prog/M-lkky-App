@@ -173,10 +173,10 @@ struct WordmarkHeader: View {
             // "Bowling" pushed right (off the right edge), per Figma.
             Text("Wooden")
                 .rotationEffect(.degrees(-14.04))
-                .offset(x: -44, y: -38)
+                .offset(x: -44, y: -50)
             Text("Bowling")
                 .rotationEffect(.degrees(-14.04))
-                .offset(x: 46, y: 38)
+                .offset(x: 32, y: 20)
         }
         .font(.molkkyHeader(82))
         .foregroundStyle(.white)
