@@ -26,6 +26,7 @@ struct SettingsView: View {
                     VStack(spacing: 4) {
                         Text(playingSince)
                             .font(.molkkyHeader(56)).foregroundStyle(Palette.lime)
+                            .momoScriptReveal()
                         Text("playing with this app")
                             .font(.suseExtraLight(13)).foregroundStyle(Palette.sage)
                     }

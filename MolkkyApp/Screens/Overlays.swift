@@ -695,6 +695,7 @@ struct ResumePromptView: View {
             Text("Welcome\nback")
                 .font(.molkkyHeader(42)).foregroundStyle(Palette.lime)
                 .multilineTextAlignment(.center).lineSpacing(-6)
+                .momoScriptReveal()
             Text("You left a game in progress.\n\(leaderText)")
                 .font(.suseExtraLight(14)).foregroundStyle(Palette.sage)
                 .multilineTextAlignment(.center)

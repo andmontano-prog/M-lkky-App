@@ -84,6 +84,7 @@ struct HomeView: View {
                 Text("New Game")
                     .font(.molkkyHeader(44))
                     .foregroundStyle(Palette.forest)
+                    .momoScriptReveal()
                 Text("Build a roster in seconds")
                     .font(.suseSemiBold(13))
                     .foregroundStyle(Palette.forest.opacity(0.72))
@@ -182,6 +183,7 @@ struct WordmarkHeader: View {
         .foregroundStyle(.white)
         .lineLimit(1)
         .fixedSize()                 // let the words overflow (bleed off both edges)
+        .momoScriptReveal(duration: 1.0)   // mask sized to the intrinsic (bleeding) content, so the wipe covers the full wordmark
         .frame(maxWidth: .infinity)
         .frame(height: 178)
     }

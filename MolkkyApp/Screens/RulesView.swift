@@ -32,6 +32,7 @@ struct RulesView: View {
                         .font(.molkkyHeader(46))
                         .lineSpacing(8)               // room for the script descenders on "play"
                         .foregroundStyle(Palette.forest)
+                        .momoScriptReveal()
                     Text("Knock 'em down. Hit fifty. Don't overcook it.")
                         .font(.suseSemiBold(13)).foregroundStyle(Palette.forest.opacity(0.8))
                 }

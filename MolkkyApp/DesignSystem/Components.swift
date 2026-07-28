@@ -28,6 +28,52 @@ extension View {
     func screenEntrance() -> some View { modifier(ScreenEntrance()) }
 }
 
+/// Signature "writing on" reveal for Momo-script headers: a soft-edged
+/// left-to-right wipe that unveils the script as if a pen were drawing it.
+/// The feathered mask edge keeps the cursive letter-joins intact (splitting a
+/// connected script per-character would break them). Replays on each appear;
+/// snaps fully open under Reduce Motion.
+struct MomoScriptReveal: ViewModifier {
+    var duration: Double = 0.85
+    var delay: Double = 0.1
+    @State private var progress: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .mask(
+                GeometryReader { geo in
+                    // Feather = the soft pen tip trailing the reveal edge.
+                    let feather: CGFloat = 0.16
+                    LinearGradient(
+                        stops: [
+                            .init(color: .white, location: 0),
+                            .init(color: .white, location: max(progress - feather, 0)),
+                            .init(color: .clear, location: min(max(progress, 0.0001), 1)),
+                            .init(color: .clear, location: 1)
+                        ],
+                        startPoint: .leading, endPoint: .trailing
+                    )
+                    .frame(width: geo.size.width, height: geo.size.height)
+                }
+            )
+            .onAppear {
+                guard !reduceMotion else { progress = 1; return }
+                progress = 0
+                withAnimation(.easeInOut(duration: duration).delay(delay)) {
+                    progress = 1
+                }
+            }
+    }
+}
+
+extension View {
+    /// Reveal a Momo-script header as if it's being signed in.
+    func momoScriptReveal(duration: Double = 0.85, delay: Double = 0.1) -> some View {
+        modifier(MomoScriptReveal(duration: duration, delay: delay))
+    }
+}
+
 /// Big signature screen title + optional subtitle.
 struct ScreenTitle: View {
     let title: String
@@ -39,6 +85,7 @@ struct ScreenTitle: View {
                 .lineLimit(1)                  // keep long titles (e.g. Wooden Bowling) on one line
                 .minimumScaleFactor(0.5)       // …shrinking to fit instead of wrapping
                 .foregroundStyle(Palette.cream)
+                .momoScriptReveal()
             if let subtitle {
                 Text(subtitle)
                     .font(.suseExtraLight(14))
