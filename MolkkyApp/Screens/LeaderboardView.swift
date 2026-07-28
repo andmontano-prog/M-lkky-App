@@ -27,7 +27,6 @@ struct LeaderboardView: View {
                     if ranked.isEmpty {
                         emptyState
                     } else {
-                        columnHeader
                         ForEach(Array(ranked.enumerated()), id: \.element.id) { index, stat in
                             LeaderboardRow(rank: index + 1, stat: stat)
                         }
@@ -53,25 +52,8 @@ struct LeaderboardView: View {
         .padding(.vertical, 8)
     }
 
-    private var columnHeader: some View {
-        HStack(spacing: 0) {
-            Text("Player")
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Text("Best")
-                .frame(width: 52, alignment: .trailing)
-            Text("Wins")
-                .frame(width: 46, alignment: .trailing)
-            Text("Win%")
-                .frame(width: 52, alignment: .trailing)
-        }
-        .font(.suseSemiBold(10)).textCase(.uppercase).tracking(1)
-        .foregroundStyle(Palette.sage)
-        .padding(.horizontal, 14)
-        .padding(.top, 4)
-    }
-
     private var footnote: some View {
-        Text("Best = fewest rounds to close out a win.")
+        Text("Best = fewest rounds to close out a win · Avg = mean rounds per win · Strikes = total misses.")
             .font(.suseExtraLight(11.5)).foregroundStyle(Palette.sage)
             .padding(.top, 6).padding(.horizontal, 4)
     }
@@ -92,43 +74,73 @@ struct LeaderboardRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                if let medal {
-                    Text(medal).font(.system(size: 22))
-                } else {
-                    Text("\(rank)")
-                        .font(.suseExtraBold(15)).foregroundStyle(Palette.inkSoft)
+        VStack(spacing: 10) {
+            HStack(spacing: 12) {
+                ZStack {
+                    if let medal {
+                        Text(medal).font(.system(size: 22))
+                    } else {
+                        Text("\(rank)")
+                            .font(.suseExtraBold(15)).foregroundStyle(Palette.inkSoft)
+                    }
                 }
+                .frame(width: 26)
+
+                InitialsBadge(name: stat.name, highlighted: rank == 1, size: 38)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(stat.name)
+                        .font(.suseExtraBold(16)).foregroundStyle(Palette.ink)
+                        .lineLimit(1)
+                    Text("\(stat.gamesPlayed) games played")
+                        .font(.suseExtraLight(12)).foregroundStyle(Palette.inkSoft)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                headline(stat.bestLabel, "Best", tint: Palette.forest)
+                headline("\(stat.wins)", "Wins", tint: Palette.ink)
             }
-            .frame(width: 26)
 
-            InitialsBadge(name: stat.name, highlighted: rank == 1, size: 38)
+            Rectangle()
+                .fill(Palette.inkSoft.opacity(0.12))
+                .frame(height: 1)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(stat.name)
-                    .font(.suseExtraBold(16)).foregroundStyle(Palette.ink)
-                    .lineLimit(1)
-                Text("\(stat.gamesPlayed) games · \(stat.accuracyLabel) hits")
-                    .font(.suseExtraLight(12)).foregroundStyle(Palette.inkSoft)
+            HStack(spacing: 0) {
+                StatCell(value: stat.avgLabel, label: "Avg rds")
+                StatCell(value: stat.accuracyLabel, label: "Hits")
+                StatCell(value: "\(stat.totalStrikes)", label: "Strikes")
+                StatCell(value: stat.winRateLabel, label: "Win%")
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Text(stat.bestLabel)
-                .font(.suseExtraBold(17)).monospacedDigit()
-                .foregroundStyle(Palette.forest)
-                .frame(width: 40, alignment: .trailing)
-            Text("\(stat.wins)")
-                .font(.suseExtraBold(17)).monospacedDigit()
-                .foregroundStyle(Palette.ink)
-                .frame(width: 40, alignment: .trailing)
-            Text(stat.winRateLabel)
-                .font(.suseSemiBold(13)).monospacedDigit()
-                .foregroundStyle(Palette.inkSoft)
-                .frame(width: 46, alignment: .trailing)
         }
-        .padding(.vertical, 11).padding(.horizontal, 14)
+        .padding(.vertical, 12).padding(.horizontal, 14)
         .background(Palette.cream, in: RoundedRectangle(cornerRadius: 15))
+    }
+
+    private func headline(_ value: String, _ label: String, tint: Color) -> some View {
+        VStack(spacing: 1) {
+            Text(value)
+                .font(.suseExtraBold(19)).monospacedDigit().foregroundStyle(tint)
+            Text(label)
+                .font(.suseSemiBold(9)).textCase(.uppercase).tracking(0.8)
+                .foregroundStyle(Palette.inkSoft)
+        }
+        .frame(minWidth: 40)
+    }
+}
+
+/// A single mini-stat in the row's secondary strip.
+private struct StatCell: View {
+    let value: String
+    let label: String
+    var body: some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.suseExtraBold(14)).monospacedDigit().foregroundStyle(Palette.ink)
+            Text(label)
+                .font(.suseSemiBold(9)).textCase(.uppercase).tracking(0.6)
+                .foregroundStyle(Palette.inkSoft)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -144,11 +156,14 @@ struct LeaderboardStat: Identifiable {
     let avgRoundsToWin: Double?
     /// Share of throws that knocked down at least one pin, across all games.
     let accuracy: Double
+    /// Total missed throws (zeros) across all games — Mölkky "strikes".
+    let totalStrikes: Int
     let lastPlayed: Date?
 
     var winRate: Double { gamesPlayed == 0 ? 0 : Double(wins) / Double(gamesPlayed) }
 
     var bestLabel: String { bestRoundsToWin.map(String.init) ?? "—" }
+    var avgLabel: String { avgRoundsToWin.map { String(format: "%.1f", $0) } ?? "—" }
     var winRateLabel: String { gamesPlayed == 0 ? "—" : "\(Int((winRate * 100).rounded()))%" }
     var accuracyLabel: String { "\(Int((accuracy * 100).rounded()))%" }
 
@@ -159,7 +174,7 @@ struct LeaderboardStat: Identifiable {
         let completed = games.filter { $0.isComplete }
         let stats = players.map { player -> LeaderboardStat in
             let name = player.name
-            var wins = 0, played = 0, hits = 0, throwCount = 0
+            var wins = 0, played = 0, hits = 0, throwCount = 0, strikes = 0
             var roundsWon: [Int] = []
 
             for game in completed {
@@ -167,6 +182,7 @@ struct LeaderboardStat: Identifiable {
                 played += 1
                 throwCount += seat.throwValues.count
                 hits += seat.throwValues.filter { $0 > 0 }.count
+                strikes += seat.throwValues.filter { $0 == 0 }.count
                 if game.winnerName == name {
                     wins += 1
                     roundsWon.append(game.round)
@@ -181,7 +197,7 @@ struct LeaderboardStat: Identifiable {
             return LeaderboardStat(id: name, name: name, wins: wins,
                                    gamesPlayed: played, bestRoundsToWin: best,
                                    avgRoundsToWin: avg, accuracy: accuracy,
-                                   lastPlayed: player.lastPlayedAt)
+                                   totalStrikes: strikes, lastPlayed: player.lastPlayedAt)
         }
 
         return stats.sorted(by: rank)
