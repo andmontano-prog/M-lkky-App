@@ -1,0 +1,486 @@
+import SwiftUI
+import SwiftData
+
+struct ScoringView: View {
+    @Environment(\.modelContext) private var context
+    let game: Game
+    @Binding var path: [GameFlow]
+
+    @State private var controller: GameController?
+    @State private var showRules = false
+    /// The points pad is hidden by default (a deliberate pause between throwers,
+    /// which cuts accidental taps and gives the scorekeeper a beat to review the
+    /// board). It appears only when armed for a throw or an edit.
+    @State private var armed = false
+    @State private var editing: EditTarget?
+    @State private var expandedID: PersistentIdentifier?
+    @State private var flashID: PersistentIdentifier?
+    @State private var showGameMenu = false
+    @State private var showHowTo = false
+    @State private var showAddPlayer = false
+    @State private var showStandings = false
+    @State private var renaming: GameParticipant?
+    @State private var strikeOutName: String?
+
+    struct EditTarget: Equatable {
+        let participantID: PersistentIdentifier
+        let index: Int
+        let previous: Int
+    }
+
+    var body: some View {
+        ZStack {
+            MolkkyBackground()
+            if let controller {
+                content(controller)
+                if let name = strikeOutName, controller.winner == nil {
+                    StrikeOutOverlay(name: name) { strikeOutName = nil }
+                        .transition(.opacity)
+                }
+                if let champ = controller.winner {
+                    WinOverlay(name: champ.name, reason: controller.winReason) {
+                        path.removeAll()
+                    }
+                }
+            }
+        }
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .tabBar)
+        .onAppear {
+            if controller == nil {
+                controller = GameController(game: game, context: context)
+                expandedID = game.currentParticipant?.persistentModelID
+            }
+        }
+        .sheet(isPresented: $showRules) {
+            RulesSheet(game: game).presentationDetents([.height(430)])
+        }
+        .sheet(isPresented: $showGameMenu) {
+            GameMenuSheet(
+                round: game.round,
+                onAdd: { DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showAddPlayer = true } },
+                onHowTo: { DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showHowTo = true } },
+                onRestart: { controller?.restart(); armed = false; editing = nil; expandedID = game.currentParticipant?.persistentModelID },
+                onHome: { path.removeAll() },
+                onEnd: { context.delete(game); try? context.save(); path.removeAll() }
+            )
+            .presentationDetents([.height(470)])
+        }
+        .sheet(isPresented: $showHowTo) {
+            NavigationStack {
+                RulesView()
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("Done") { showHowTo = false }
+                                .font(.suseSemiBold(15)).foregroundStyle(Palette.lime)
+                        }
+                    }
+            }
+        }
+        .sheet(isPresented: $showAddPlayer) {
+            AddPlayerSheet(existingNames: game.participants.map { $0.name }) { name in
+                controller?.addParticipant(named: name)
+                expandedID = game.orderedParticipants.last?.persistentModelID
+            }
+            .presentationDetents([.height(460)])
+        }
+        .sheet(item: $renaming) { participant in
+            RenameSheet(currentName: participant.name) { newName in
+                controller?.rename(participant, to: newName)
+            }
+            .presentationDetents([.height(280)])
+        }
+        .sheet(isPresented: $showStandings) {
+            StandingsSheet(game: game)
+                .presentationDetents([.medium, .large])
+        }
+    }
+
+    private func content(_ controller: GameController) -> some View {
+        VStack(spacing: 0) {
+            header(controller)
+            playerList(controller)
+            padArea(controller)
+        }
+        .screenEntrance()
+    }
+
+    // MARK: Header
+
+    private func header(_ controller: GameController) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Button { showGameMenu = true } label: {
+                Image(systemName: "line.3.horizontal")
+                    .foregroundStyle(Palette.cream)
+                    .frame(width: 42, height: 42)
+                    .background(Palette.cream.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Palette.cream.opacity(0.14), lineWidth: 1))
+            }
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Now throwing · Round \(game.round)").molkkyLabel()
+                Text(controller.current?.name ?? "—")
+                    .font(.molkkyHeader(40)).foregroundStyle(Palette.lime)
+                    .lineLimit(1).minimumScaleFactor(0.45)
+            }
+            Spacer()
+            HStack(spacing: 8) {
+                Button { showStandings = true } label: {
+                    Image(systemName: "chart.bar.fill")
+                        .foregroundStyle(Palette.cream)
+                        .frame(width: 42, height: 42)
+                        .background(Palette.cream.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Palette.cream.opacity(0.14), lineWidth: 1))
+                }
+                Button { showRules = true } label: {
+                    Image(systemName: "gearshape.fill")
+                        .foregroundStyle(Palette.cream)
+                        .frame(width: 42, height: 42)
+                        .background(Palette.cream.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Palette.cream.opacity(0.14), lineWidth: 1))
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 8)
+    }
+
+    // MARK: Players (tap a row to reveal & fix throws)
+
+    private func playerList(_ controller: GameController) -> some View {
+        ScrollView {
+            VStack(spacing: 8) {
+                ForEach(Array(game.orderedParticipants.enumerated()), id: \.element.persistentModelID) { index, participant in
+                    ScoreRow(
+                        participant: participant,
+                        rules: game.rules,
+                        isCurrent: index == game.currentTurnIndex && !participant.state(rules: game.rules).isEliminated,
+                        isExpanded: expandedID == participant.persistentModelID,
+                        isFlashing: flashID == participant.persistentModelID,
+                        onToggle: {
+                            let id = participant.persistentModelID
+                            expandedID = (expandedID == id) ? nil : id
+                        },
+                        onEditThrow: { throwIndex, previous in
+                            editing = EditTarget(participantID: participant.persistentModelID, index: throwIndex, previous: previous)
+                            armed = false
+                            expandedID = participant.persistentModelID
+                        },
+                        onRename: { renaming = participant }
+                    )
+                }
+                Button { showAddPlayer = true } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "plus")
+                        Text("Add a player").font(.suseExtraBold(14))
+                    }
+                    .foregroundStyle(Palette.lime)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 13)
+                    .background(Palette.lime.opacity(0.07), in: RoundedRectangle(cornerRadius: 15))
+                    .overlay(RoundedRectangle(cornerRadius: 15).strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [5]))
+                        .foregroundStyle(Palette.lime.opacity(0.4)))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 2)
+            }
+            .padding(.horizontal, 18)
+            .padding(.top, 2)
+        }
+    }
+
+    // MARK: Pad area — hidden until armed / editing
+
+    @ViewBuilder
+    private func padArea(_ controller: GameController) -> some View {
+        if !armed && editing == nil {
+            ReadyPanel(name: firstName(controller.current?.name ?? "")) {
+                armed = true
+            }
+        } else {
+            ScorePad(
+                contextText: padContext(controller),
+                showFirstTimer: editing == nil && game.ruleFirstTimerExtraStrikes > 0,
+                isFirstTimer: controller.current?.isFirstTimer ?? false,
+                firstTimerExtra: game.ruleFirstTimerExtraStrikes,
+                onToggleFirstTimer: {
+                    if let cur = controller.current { controller.setFirstTimer(cur, !cur.isFirstTimer) }
+                },
+                onValue: { value in
+                    if let e = editing {
+                        if let p = context.model(for: e.participantID) as? GameParticipant {
+                            controller.editThrow(for: p, at: e.index, to: value)
+                        }
+                        editing = nil
+                    } else {
+                        let scored = controller.current
+                        let wasOut = scored?.state(rules: game.rules).isEliminated ?? false
+                        controller.recordThrow(value)
+                        armed = false
+                        expandedID = controller.current?.persistentModelID
+                        if let id = scored?.persistentModelID { triggerFlash(id) }
+                        // just eliminated (and the game didn't end) → strike-out animation
+                        if let scored, !wasOut, scored.state(rules: game.rules).isEliminated,
+                           controller.winner == nil {
+                            strikeOutName = scored.name.split(separator: " ").first.map(String.init) ?? scored.name
+                        }
+                    }
+                },
+                onCancel: {
+                    armed = false
+                    editing = nil
+                }
+            )
+        }
+    }
+
+    private func padContext(_ controller: GameController) -> AttributedString {
+        if let e = editing, let p = context.model(for: e.participantID) as? GameParticipant {
+            let was = e.previous == 0 ? "miss" : "\(e.previous)"
+            return AttributedString("Editing \(firstName(p.name)) · throw \(e.index + 1) (was \(was))")
+        }
+        return AttributedString("Scoring \(firstName(controller.current?.name ?? ""))")
+    }
+
+    private func firstName(_ name: String) -> String {
+        name.split(separator: " ").first.map(String.init) ?? name
+    }
+
+    /// Quick lime pulse on the row that just scored — a visual confirm (~350ms).
+    private func triggerFlash(_ id: PersistentIdentifier) {
+        flashID = id
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            withAnimation(.easeOut(duration: 0.35)) { flashID = nil }
+        }
+    }
+}
+
+// MARK: - Score row (expandable to edit any player's throws)
+
+struct ScoreRow: View {
+    let participant: GameParticipant
+    let rules: RuleConfig
+    let isCurrent: Bool
+    let isExpanded: Bool
+    var isFlashing: Bool = false
+    let onToggle: () -> Void
+    let onEditThrow: (Int, Int) -> Void
+    var onRename: () -> Void = {}
+
+    private var state: PlayerScoreState { participant.state(rules: rules) }
+    private var allowed: Int { ScoringEngine.maxStrikes(rules: rules, isFirstTimer: participant.isFirstTimer) }
+    /// Current thrower, one miss from elimination — warn with a red outline.
+    private var brink: Bool { isCurrent && state.missStreak > 0 && state.missStreak >= allowed - 1 }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Button(action: onToggle) { rowFace }
+                .buttonStyle(.plain)
+            if isExpanded { throwsStrip }
+        }
+        .background(isCurrent ? Palette.pineLift : Palette.pine, in: RoundedRectangle(cornerRadius: 15))
+        .overlay(
+            RoundedRectangle(cornerRadius: 15)
+                .fill(Palette.lime)
+                .opacity(isFlashing ? 0.28 : 0)
+                .allowsHitTesting(false)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 15)
+                .stroke(brink ? Palette.danger : (isCurrent ? Palette.lime : .clear),
+                        lineWidth: brink ? 2.5 : 1.5)
+        )
+        .shadow(color: brink ? Palette.danger.opacity(0.5) : .clear, radius: 8)
+        .opacity(state.isEliminated ? 0.45 : 1)
+    }
+
+    private var rowFace: some View {
+        HStack(spacing: 12) {
+            InitialsBadge(name: participant.name, highlighted: isCurrent, size: 40)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 7) {
+                    Text(participant.name).font(.suseExtraBold(15)).foregroundStyle(Palette.cream)
+                    if participant.isFirstTimer {
+                        Text("+\(rules.firstTimerExtraStrikes)")
+                            .font(.suseSemiBold(10)).padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(Palette.lime, in: RoundedRectangle(cornerRadius: 6))
+                            .foregroundStyle(Palette.forest)
+                    }
+                    HStack(spacing: 3) {
+                        ForEach(0..<allowed, id: \.self) { i in
+                            Circle().fill(i < state.missStreak ? Palette.danger : Palette.cream.opacity(0.18))
+                                .frame(width: 7, height: 7)
+                        }
+                    }
+                    if state.isEliminated {
+                        Text("OUT").font(.suseExtraBold(10)).foregroundStyle(Palette.danger).tracking(1)
+                    }
+                }
+                RunMeter(score: state.score, target: rules.scoreToWin)
+            }
+            Spacer(minLength: 8)
+            HStack(alignment: .lastTextBaseline, spacing: 1) {
+                Text("\(state.score)").font(.suseExtraBold(26))
+                    .foregroundStyle(state.isEliminated ? Palette.danger : Palette.cream).monospacedDigit()
+                Text("/\(rules.scoreToWin)").font(.suseExtraLight(12)).foregroundStyle(Palette.sage)
+            }
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(isExpanded ? Palette.lime : Palette.sage)
+                .rotationEffect(.degrees(isExpanded ? 90 : 0))
+        }
+        .padding(11)
+    }
+
+    private var throwsStrip: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("\(participant.name.split(separator: " ").first.map(String.init) ?? participant.name)'s throws · tap to fix")
+                    .molkkyLabel()
+                Spacer()
+                Button(action: onRename) {
+                    Label("Rename", systemImage: "pencil")
+                        .font(.suseSemiBold(11)).foregroundStyle(Palette.lime)
+                }
+                .buttonStyle(.plain)
+            }
+            if participant.throwValues.isEmpty {
+                Text("No throws yet").font(.suseExtraLight(12)).foregroundStyle(Palette.sage)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(Array(participant.throwValues.enumerated()), id: \.offset) { idx, value in
+                            Button {
+                                onEditThrow(idx, value)
+                            } label: {
+                                ThrowChip(value: value, isReset: state.resetThrowIndices.contains(idx), isEditing: false)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.bottom, 12)
+    }
+}
+
+// MARK: - Throw chip
+
+struct ThrowChip: View {
+    let value: Int
+    let isReset: Bool
+    let isEditing: Bool
+    var body: some View {
+        Text(value == 0 ? "✕" : "\(value)")
+            .font(.suseExtraBold(14)).monospacedDigit()
+            .foregroundStyle(value == 0 ? Palette.sage : (isReset ? Palette.danger : Palette.cream))
+            .frame(minWidth: 34, minHeight: 34)
+            .background(Palette.cream.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(isEditing ? Palette.lime : (isReset ? Palette.danger : Palette.cream.opacity(0.14)),
+                            lineWidth: isEditing ? 2 : 1)
+            )
+    }
+}
+
+// MARK: - Ready panel (the pause between throwers)
+
+struct ReadyPanel: View {
+    let name: String
+    let onArm: () -> Void
+    var body: some View {
+        VStack(spacing: 10) {
+            Button(action: onArm) {
+                HStack(spacing: 10) {
+                    Image(systemName: "hand.point.up.braille.fill")
+                    Text("Enter \(name)'s throw")
+                }
+                .font(.suseExtraBold(17))
+                .frame(maxWidth: .infinity).padding(.vertical, 17)
+                .foregroundStyle(Palette.forest)
+                .background(Palette.lime, in: RoundedRectangle(cornerRadius: 14))
+            }
+            .buttonStyle(.plain)
+            Text("Review the board · tap a player to fix a score")
+                .font(.suseExtraLight(12)).foregroundStyle(Palette.sage)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+        .padding(.bottom, 8)
+        .background(Palette.forestDeep)
+    }
+}
+
+// MARK: - Score pad (0–12, no undo — mistakes are fixed by editing)
+
+struct ScorePad: View {
+    let contextText: AttributedString
+    var showFirstTimer: Bool = false
+    var isFirstTimer: Bool = false
+    var firstTimerExtra: Int = 1
+    var onToggleFirstTimer: () -> Void = {}
+    let onValue: (Int) -> Void
+    let onCancel: () -> Void
+
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 4)
+
+    var body: some View {
+        VStack(spacing: 10) {
+            HStack {
+                Text(contextText).font(.suseSemiBold(12.5)).foregroundStyle(Palette.cream)
+                Spacer()
+                Button(action: onCancel) {
+                    Text("Cancel").font(.suseSemiBold(12.5)).foregroundStyle(Palette.sage)
+                        .padding(.horizontal, 13).padding(.vertical, 7)
+                        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Palette.cream.opacity(0.2), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+            if showFirstTimer {
+                Button(action: onToggleFirstTimer) {
+                    HStack(spacing: 9) {
+                        Image(systemName: isFirstTimer ? "checkmark.square.fill" : "square")
+                            .font(.system(size: 20))
+                            .foregroundStyle(isFirstTimer ? Palette.lime : Palette.sage)
+                        Text("First-timer handicap · +\(firstTimerExtra) strike\(firstTimerExtra > 1 ? "s" : "")")
+                            .font(.suseSemiBold(13))
+                            .foregroundStyle(isFirstTimer ? Palette.cream : Palette.sage)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 12).padding(.vertical, 10)
+                    .background((isFirstTimer ? Palette.lime.opacity(0.1) : Palette.cream.opacity(0.05)),
+                                in: RoundedRectangle(cornerRadius: 11))
+                    .overlay(RoundedRectangle(cornerRadius: 11)
+                        .stroke(isFirstTimer ? Palette.lime : Palette.cream.opacity(0.14), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            }
+            LazyVGrid(columns: columns, spacing: 8) {
+                ForEach(1...12, id: \.self) { n in
+                    Button { onValue(n) } label: {
+                        Text("\(n)").font(.suseExtraBold(22)).monospacedDigit()
+                            .frame(maxWidth: .infinity).padding(.vertical, 15)
+                            .foregroundStyle(Palette.cream)
+                            .background(n == 12 ? Palette.teal : Palette.pine, in: RoundedRectangle(cornerRadius: 13))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            Button { onValue(0) } label: {
+                Text("MISS").font(.suseExtraBold(18))
+                    .frame(maxWidth: .infinity).padding(.vertical, 15)
+                    .foregroundStyle(Palette.sage)
+                    .background(Palette.cream.opacity(0.06), in: RoundedRectangle(cornerRadius: 13))
+                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(Palette.cream.opacity(0.14), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+        .padding(.bottom, 8)
+        .background(Palette.forestDeep)
+    }
+}
