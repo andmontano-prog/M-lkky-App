@@ -80,21 +80,21 @@ struct HomeView: View {
         Button {
             path.append(.setup(seedNames: []))
         } label: {
-            HStack(spacing: 10) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("New Game")
-                        .font(.molkkyHeader(44))
-                        .foregroundStyle(Palette.forest)
-                    Text("Build a roster in seconds")
-                        .font(.suseSemiBold(13))
-                        .foregroundStyle(Palette.forest.opacity(0.72))
-                }
-                Spacer(minLength: 0)
-                ButtonBaton()
+            VStack(alignment: .leading, spacing: 8) {
+                Text("New Game")
+                    .font(.molkkyHeader(44))
+                    .foregroundStyle(Palette.forest)
+                Text("Build a roster in seconds")
+                    .font(.suseSemiBold(13))
+                    .foregroundStyle(Palette.forest.opacity(0.72))
             }
             .padding(20)
-            .frame(maxWidth: .infinity, minHeight: 125, alignment: .leading)
-            .background(Palette.lime, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .frame(maxWidth: .infinity, minHeight: 132, alignment: .topLeading)
+            .overlay(alignment: .bottomTrailing) {
+                ButtonBaton().offset(x: -10, y: 28)   // extends past the bottom → cropped by the button shape
+            }
+            .background(Palette.lime, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -169,19 +169,21 @@ struct SkittleCluster: View {
 struct WordmarkHeader: View {
     var body: some View {
         ZStack {
+            // Oversized + cropped: "Wooden" pushed left (off the left edge),
+            // "Bowling" pushed right (off the right edge), per Figma.
             Text("Wooden")
                 .rotationEffect(.degrees(-14.04))
-                .offset(y: -52)
+                .offset(x: -44, y: -38)
             Text("Bowling")
                 .rotationEffect(.degrees(-14.04))
-                .offset(y: 52)
+                .offset(x: 46, y: 38)
         }
         .font(.molkkyHeader(82))
         .foregroundStyle(.white)
         .lineLimit(1)
         .fixedSize()                 // let the words overflow (bleed off both edges)
         .frame(maxWidth: .infinity)
-        .frame(height: 210)
+        .frame(height: 178)
     }
 }
 
@@ -190,22 +192,22 @@ struct WordmarkHeader: View {
 struct ButtonBaton: View {
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 5, style: .circular)
+            RoundedRectangle(cornerRadius: 10, style: .circular)
                 .fill(Palette.forest)
-                .frame(width: 22, height: 52)
-            HStack(spacing: 4) {
+                .frame(width: 44, height: 105)
+            HStack(spacing: 6) {
                 eye
                 eye
             }
-            .offset(y: -12)
+            .offset(y: -26)
         }
         .rotationEffect(.degrees(31.62))
-        .frame(width: 56, height: 62)
+        .frame(width: 96, height: 118)
     }
 
     private var eye: some View {
         EyeArc()
-            .stroke(Palette.lime, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-            .frame(width: 7, height: 5)
+            .stroke(Palette.lime, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+            .frame(width: 11, height: 7)
     }
 }
